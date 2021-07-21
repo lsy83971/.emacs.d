@@ -18,7 +18,6 @@
                  dash
                  smartparens
                  expand-region
-                 ;;iedit
                  electric-spacing
                  elpy
                  yasnippet
@@ -28,9 +27,8 @@
                  cedet
                  nyan-mode
                  multiple-cursors
-                 ;;auto-complete-config
-                 ;;auto-complete-c-headers
-                 ;;google-c-style
+		 ace-jump-mode
+		 undo-tree
                  ))
 
 
@@ -160,9 +158,10 @@ locate PACKAGE."
 ;;----------------------------------------------------------------------------
 
 (global-set-key (kbd "C-s") 'swiper)
-;; (global-set-key (kbd "C-c C-r") 'ivy-resume)
 (global-set-key (kbd "M-x") 'counsel-M-x)
-;; (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+(global-set-key (kbd "C-x C-f") 'counsel-find-file)
+(global-set-key (kbd "C-c r") 'counsel-recentf)
+(global-set-key (kbd "C-x b") 'counsel-switch-buffer)
 (global-set-key (kbd "C-1") 'set-mark-command)
 (global-set-key (kbd "<f4>") 'switch-window)
 (global-set-key (kbd "<f5>") 'comment-or-uncomment-region)
@@ -170,6 +169,7 @@ locate PACKAGE."
 (global-set-key (kbd "C-x <return> -") 'insert-split-line)
 (global-set-key [(f8)] 'loop-alpha)
 (global-set-key (kbd "C-SPC") 'nil)
+
 
 (defun insert-split-line ()
   (interactive)
@@ -206,56 +206,10 @@ locate PACKAGE."
 (scroll-bar-mode -1)
 (menu-bar-mode -1)
 (setq inhibit-splash-screen t)
-;;(setq-default cursor-type 'bar)
 (setq inhibit-startup-message t)
 (fset 'yes-or-no-p 'y-or-n-p)
-;;(global-linum-mode t)
-;;(dark)
 (nyan-mode)
 ;;(global-flycheck-mode -1)
-
-;;------------------------------------------------------------------------------
-;; R-mode
-;;------------------------------------------------------------------------------
-
-;; (with-eval-after-load 'ess-mode
-;;   (define-key ess-mode-map (kbd "C-r")
-;;     'ess-eval-region-or-function-or-paragraph))
-;; (add-hook 'ess-mode-hook
-;;           (lambda ()
-;;             (ess-set-style 'C++ 'quiet)
-;;             (setq comment-column 4)
-;;             ess-indent-level 2
-;;             (local-set-key (kbd ",") '(lambda() (interactive) (insert " , ")))
-;;             (local-set-key (kbd "~") '(lambda() (interactive) (insert " ~ ")))
-;;             (local-set-key (kbd "M-p") 'scroll-down-command)
-;;             (local-set-key (kbd "M-n") 'scroll-up-command)
-;;             ess-continued-statement-offset 2
-;;             ess-brace-offset 0
-;;             ess-arg-function-offset 4
-;;             ess-expression-offset 2
-;;             ess-
-;;             else-offset 0
-;;             ess-close-brace-offset 0
-;;             ))
-;; (add-hook 'ess-mode-hook 'hungry-delete-mode)
-;; (add-hook 'ess-mode-hook 'turn-on-orgstruct)
-;; (add-hook 'ess-mode-hook 'turn-on-orgstruct++)
-;; (setq orgstruct-heading-prefi
-;;       x-regexp "##*")
-
-;; -----------------------------------------------------------------
-;; ecb-mode
-;; -----------------------------------------------------------------
-
-;; (require 'semantic)
-;; (require 'cedet)
-;; (require 'ecb)
-;; (setq stack-trace-on-error nil) ;;don’t popup Backtrace window
-;; (setq ecb-tip-of-the-day nil)
-;; (setq ecb-layout-name  "left11")
-;; (setq ecb-options-version "2.40")
-;; (add-hook  'ecb-activate-hook (lambda () (semantic-mode)))
 
 
 
@@ -283,9 +237,44 @@ locate PACKAGE."
   (kill-new (buffer-file-name))
   )
 
-;;(global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
+(defun lsy-kill ()
+  (interactive)
+  (if (region-active-p)
+      (call-interactively #'kill-ring-save) ;; then
+      (kill-ring-save (line-beginning-position) (line-end-position))
+      ))
+
+(defun lsy-kill-region ()
+  (interactive)
+  (if (region-active-p)
+      (call-interactively #'kill-region) ;; then
+      (kill-region (line-beginning-position) (line-end-position))
+      ))
+
+
+(defun lsy-yank ()
+  (interactive)
+  (if (region-active-p)
+      (progn
+	(delete-region (region-beginning) (region-end))
+	(call-interactively #'yank)	
+       )
+      (call-interactively #'yank) ;; then
+    ))
+
+(global-undo-tree-mode)
+(global-company-mode)
+
 (global-set-key (kbd "<f7>" ) 'lsy:copy-file-name)
 (global-set-key (kbd "C-4" ) 'ace-jump-mode)
+(global-set-key (kbd "S-<left>" ) 'windmove-left)
+(global-set-key (kbd "S-<right>" ) 'windmove-right)
+(global-set-key (kbd "S-<up>" ) 'windmove-up)
+(global-set-key (kbd "S-<down>" ) 'windmove-down)
+(global-set-key (kbd "M-w" ) 'lsy-kill)
+(global-set-key (kbd "C-w" ) 'lsy-kill-region)
+(global-set-key (kbd "C-y" ) 'lsy-yank)
+;;(global-set-key (kbd "C-x u") 'undo-tree-visualize)
 
 
 
