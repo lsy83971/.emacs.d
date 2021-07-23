@@ -22,7 +22,7 @@
                  electric-spacing
                  elpy
                  yasnippet
-                 auto-complete
+                 ;;auto-complete
                  ecb
                  jedi
                  cedet
@@ -58,14 +58,11 @@
 ;;-------------------
 ;;elpa
 (require 'package)
-
-
 (let ((local-package-el (locate-library "package")))
   (when (string-match-p (concat "^" (regexp-quote user-emacs-directory))
                         local-package-el)
     (warn "Please remove the local package.el, which is no longer supported (%s)"
           local-package-el)))
-
 
 ;;; Install into separate package dirs for each Emacs version, to prevent bytecode incompatibility
 (let ((versioned-package-dir
@@ -78,11 +75,8 @@
 
 ;; We include the org repository for completeness, but don't normally
 ;; use it.
-
 ;; NOTE: In case of MELPA problems, the official mirror URL is
 ;; https://www.mirrorservice.org/sites/stable.melpa.org/packages/
-
-
 ;;; On-demand installation of packages
 
 (defun require-package (package &optional min-version no-refresh)

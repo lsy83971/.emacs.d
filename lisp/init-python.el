@@ -59,7 +59,7 @@
    ;; need to change electric-spacing.el delete ?/(
    (company-mode)
    ;;(require 'auto-complete-config)
-   (ac-config-default)
+   ;;(ac-config-default)
    (local-set-key (kbd "C-r") 'my:python-eval-line)
    (local-set-key (kbd "<f2>") 'my:hide-or-show)
    (local-set-key (kbd "M-.") 'jedi:goto-definition)
