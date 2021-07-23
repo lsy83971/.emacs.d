@@ -1,4 +1,5 @@
 ;;------------------------------------------------------------
+;; add export LC_CTYPE="zh_CN.utf-8" to $home/.bashrc /etc/profile
 ;; (set-face-attribute
 ;;  'default nil :font "UbuntuMono 14")
 
@@ -29,6 +30,9 @@
                  multiple-cursors
 		 ace-jump-mode
 		 undo-tree
+		 magit
+		 anzu
+		 web-mode
                  ))
 
 
@@ -257,13 +261,16 @@ locate PACKAGE."
   (if (region-active-p)
       (progn
 	(delete-region (region-beginning) (region-end))
-	(call-interactively #'yank)	
+	(call-interactively #'yank)
        )
       (call-interactively #'yank) ;; then
     ))
 
 (global-undo-tree-mode)
 (global-company-mode)
+(global-anzu-mode +1)
+(global-hungry-delete-mode)
+(delete-selection-mode)
 
 (global-set-key (kbd "<f7>" ) 'lsy:copy-file-name)
 (global-set-key (kbd "C-4" ) 'ace-jump-mode)
@@ -274,8 +281,9 @@ locate PACKAGE."
 (global-set-key (kbd "M-w" ) 'lsy-kill)
 (global-set-key (kbd "C-w" ) 'lsy-kill-region)
 (global-set-key (kbd "C-y" ) 'lsy-yank)
-;;(global-set-key (kbd "C-x u") 'undo-tree-visualize)
-
+(global-set-key [remap query-replace] 'anzu-query-replace)
+(global-set-key [remap query-replace-regexp] 'anzu-query-replace-regexp)
+(global-set-key (kbd "C-t" ) 'anzu-query-replace-at-cursor)
 
 
 (provide 'init-local)

@@ -2,19 +2,13 @@
 ;;------------------------------------------------------------
 ;; python
 ;;------------------------------------------------------------
-
-
-
-
-
-
 (defun setpy2 ()
   (interactive)
   (setq python-shell-interpreter "python2"))
 
 (defun setpy3 ()
   (interactive)
-  (setq python-shell-interpreter "python3"))
+  (setq python-shell-interpreter "/usr/local/bin/python3"))
 
 
 (defun my:python-eval-line ()
@@ -46,15 +40,17 @@
    (require 'jedi)
    (jedi:setup)
    (setq jedi:complete-on-dot t)
-   (setq python-shell-interpreter "/usr/bin/python3"
-         python-shell-interpreter-args ""
+   (setpy3)
+   (setq python-shell-interpreter-args ""
          python-shell-prompt-regexp "In \\[[0-9]+\\]: "
          python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: ")
    (setq jedi:server-args
          '(
-           "--sys-path" "/usr/local/lib/python3.6/dist-packages"
-           "--sys-path" "/usr/lib/python3/dist-packages"
-           "--sys-path" "/home/lsy/Project/model_vision"
+	   ;; use sys.path
+	   "--sys-path" "/usr/local/lib/python3.6"
+	   "--sys-path" "/usr/local/lib/python3.6/lib-dynload"
+	   "--sys-path" "/usr/local/lib/python3.6/site-packages"
+	   "--sys-path" "~/Project/model_vision/"
            ))
    (setq elpy-rpc-backend "jedi")
    (setq python-indent-offset 4)
@@ -69,5 +65,8 @@
    (local-set-key (kbd "M-.") 'jedi:goto-definition)
    (local-set-key (kbd "M-,") 'jedi:goto-definition-pop-marker)
     ))
+
+;; elpy sudo apt install virtualenv to fix
+;; error in process sentinel: peculiar error: "exited abnormally with code 1"
 
 (provide 'init-python)
