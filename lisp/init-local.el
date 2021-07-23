@@ -1,13 +1,13 @@
 ;;------------------------------------------------------------
 ;; add export LC_CTYPE="zh_CN.utf-8" to $home/.bashrc /etc/profile
-;; (set-face-attribute
-;;  'default nil :font "UbuntuMono 14")
+(set-face-attribute
+ 'default nil :font "UbuntuMono 14")
 
-;; ;; Chinese Font 配置中文字体
-;; (dolist (charset '(kana han symbol cjk-misc bopomofo))
-;;   (set-fontset-font (frame-parameter nil 'font)
-;;                     charset
-;;                     (font-spec :family "Microsoft YaHei" :size 13)))
+;; Chinese Font 配置中文字体
+(dolist (charset '(kana han symbol cjk-misc bopomofo))
+  (set-fontset-font (frame-parameter nil 'font)
+                    charset
+                    (font-spec :family "Microsoft YaHei" :size 13)))
 ;;------------------------------------------------------------
 
 (require 'cl)

@@ -38,6 +38,7 @@
    (elpy-enable)
    (hs-minor-mode)
    (require 'jedi)
+   ;; jedi include auto-complete packages so disable company mode
    (jedi:setup)
    (setq jedi:complete-on-dot t)
    (setpy3)
@@ -57,7 +58,7 @@
    (electric-spacing-mode 1)
    ;;(defvar electric-spacing-operators '(?= ?< ?> ?% ?+ ?- ?* ?/ ?& ?| ?: ?? ?, ?~ ?. ?^ ?\; ?!))
    ;; need to change electric-spacing.el delete ?/(
-   (company-mode)
+   (company-mode -1)
    ;;(require 'auto-complete-config)
    ;;(ac-config-default)
    (local-set-key (kbd "C-r") 'my:python-eval-line)

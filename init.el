@@ -2,6 +2,12 @@
 (set-face-attribute
  'default nil :font "UbuntuMono 14")
 
+;; .emacs.d 下 msyh.ttf复制到 /usr/share/fonts/truetype/msyh/下
+;; 再msyh下执行
+;; sudo sudo mkfontscale
+;; sudo sudo mkfontdir
+;; sudo sudo fc-cache
+
 ;; Chinese Font 配置中文字体
 (dolist (charset '(kana han symbol cjk-misc bopomofo))
   (set-fontset-font (frame-parameter nil 'font)
@@ -53,6 +59,8 @@ re-downloaded in order to locate PACKAGE."
  '(ansi-color-names-vector
    ["#2e3436" "#a40000" "#4e9a06" "#c4a000" "#204a87" "#5c3566" "#729fcf" "#eeeeec"])
  '(custom-enabled-themes (quote (deeper-blue)))
+ '(elpy-autodoc-delay 0.2)
+ '(elpy-eldoc-show-current-function nil)
  '(package-selected-packages
    (quote
     (magit electric-spacing ace-jump-mode multiple-cursors fullframe smex ivy-dired-history ivy company-anaconda virtualenvwrapper virtualenv auto-complete-c-headers jedi ecb elpy web-mode expand-region smartparens dash counsel swiper hungry-delete helm-company auto-complete function-args zygospore helm-gtags helm yasnippet ws-butler volatile-highlights use-package undo-tree iedit dtrt-indent counsel-projectile company clean-aindent-mode anzu))))
