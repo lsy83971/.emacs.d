@@ -27,12 +27,9 @@
                  cedet
                  nyan-mode
                  multiple-cursors
-		 ace-jump-mode
-		 undo-tree
+                 ace-jump-mode
+                 undo-tree
                  ))
-
-
-
 
 (defun lsy-installed-pkgs()
   (loop for pkg in lsy-pkgs
@@ -112,7 +109,7 @@ locate PACKAGE."
 ;;; Fire up package.el
 
 (setq package-enable-at-startup nil)
-(package-initialize)
+;;(package-initialize)
 
 
 (require-package 'fullframe)
