@@ -8,4 +8,7 @@ elpy/
 projectile-bookmarks.eld
 recentf
 semanticdb/
-
+auto-save-list/
+transient/
+*.~undo-tree~
+**.~undo-tree~

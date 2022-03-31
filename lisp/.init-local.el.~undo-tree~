@@ -1,5 +1,5 @@
 (undo-tree-save-format-version . 1)
-"f745e51d377ccfb24b886e419b8bdf92eac63efd"
+"fbc92f96d0b067a373a612d33b9876d773990ffd"
 [nil nil nil nil (25157 31264 14718 0) 0 nil]
 ([nil nil ((3533 . 3535) (t 25157 23248 0 0)) nil (25157 31264 14713 0) 0 nil])
 ([nil nil ((942 . 947) (941 . 943) (#("(" 0 1 (fontified nil)) . -941) (941 . 942) (t 25157 31264 0 0)) nil (25157 31470 762170 0) 0 nil])
@@ -18,13 +18,13 @@
 ([nil nil ((nil rear-nonsticky nil 1005 . 1006) (nil fontified nil 1005 . 1006) (nil fontified nil 1004 . 1005) (nil fontified nil 992 . 1004) (nil fontified nil 974 . 992) (974 . 1006)) nil (25157 31470 762154 0) 0 nil])
 ([nil nil ((990 . 994)) nil (25157 31470 762153 0) 0 nil])
 ([nil nil ((#("'" 0 1 (fontified t)) . -995) (undo-tree-id5 . -1) 996) nil (25157 31470 762152 0) 0 nil])
-([nil nil ((#("(package-install 'ace-jump-mode)" 0 18 (fontified t) 18 30 (fontified t) 30 31 (fontified t rear-nonsticky t) 31 32 (fontified t)) . 941) (undo-tree-id2 . -16) (undo-tree-id3 . -16) (undo-tree-id4 . -16)) nil (25157 31470 762150 0) 0 nil])
+([nil nil ((#("(package-install 'ace-jump-mode)" 0 18 (fontified t) 18 30 (fontified t) 30 31 (rear-nonsticky t fontified t) 31 32 (fontified t)) . 941) (undo-tree-id2 . -16) (undo-tree-id3 . -16) (undo-tree-id4 . -16)) nil (25157 31470 762150 0) 0 nil])
 ([nil nil ((963 . 964)) nil (25157 31470 762147 0) 0 nil])
 ([nil nil ((#("ace" 0 3 (fontified t)) . 964)) nil (25157 31470 762147 0) 0 nil])
 ([nil nil ((#("-jump" 0 5 (fontified t)) . 964)) nil (25157 31470 762146 0) 0 nil])
-([nil nil ((#("-mode" 0 4 (fontified t) 4 5 (rear-nonsticky t fontified t)) . 964)) nil (25157 31470 762145 0) 0 nil])
+([nil nil ((#("-mode" 0 4 (fontified t) 4 5 (fontified t rear-nonsticky t)) . 964)) nil (25157 31470 762145 0) 0 nil])
 ([nil nil ((964 . 971)) nil (25157 31470 762144 0) 0 nil])
-([nil nil ((#("(package-installed-p 'company)" 0 29 (fontified t) 29 30 (rear-nonsticky t fontified t)) . 942) (undo-tree-id0 . -30) (undo-tree-id1 . -30)) nil (25157 31470 762143 0) 0 nil])
+([nil nil ((#("(package-installed-p 'company)" 0 29 (fontified t) 29 30 (fontified t rear-nonsticky t)) . 942) (undo-tree-id0 . -30) (undo-tree-id1 . -30)) nil (25157 31470 762143 0) 0 nil])
 ([nil nil ((#("
 " 0 1 (fontified t)) . 942)) nil (25157 31470 762133 0) 0 nil])
 ([nil nil ((#("
@@ -40,5 +40,196 @@
 ([nil nil ((#(" " 0 1 (fontified t)) . -927) (undo-tree-id14 . -1) (#(" " 0 1 (fontified nil)) . -928) (undo-tree-id15 . -1) (#("	" 0 1 (fontified nil)) . 929) (undo-tree-id16 . -1) (921 . 929) 922) nil (25157 31490 687159 0) 0 nil])
 ([nil nil ((927 . 936)) nil (25157 31490 687149 0) 0 nil])
 ([nil nil ((936 . 937)) nil (25157 31490 687146 0) 0 nil])
-([nil current ((937 . 938) (t 25157 31490 0 0)) nil (25157 31491 898475 0) 0 nil])
+([nil nil ((937 . 938) (t 25157 31490 0 0)) nil (25157 31491 898475 0) 0 nil])
+([nil nil ((969 . 973) (968 . 970) (#("(" 0 1 (fontified nil)) . -968) (968 . 969) (t 25157 31491 0 0)) nil (25157 32100 599612 0) 0 nil])
+([nil nil ((973 . 979)) nil (25157 32100 599611 0) 0 nil])
+([nil nil ((969 . 984) (#("require-pa" 0 10 (fontified t)) . -969) (undo-tree-id3 . -10) 979) nil (25157 32100 599610 0) 0 nil])
+([nil nil ((985 . 986) (#(" " 0 1 (fontified nil)) . -985) (985 . 986) (#("'" 0 1 (fontified nil)) . -985) (984 . 986)) nil (25157 32100 599608 0) 0 nil])
+([nil nil ((nil rear-nonsticky nil 1000 . 1001) (nil fontified nil 986 . 1001) (986 . 1001)) nil (25157 32100 599606 0) 0 nil])
+([nil nil ((nil rear-nonsticky nil 994 . 995) (nil fontified nil 986 . 995) (986 . 995) (#("require-package" 0 14 (fontified t) 14 15 (fontified t rear-nonsticky t)) . 986) (undo-tree-id0 . -15) (undo-tree-id1 . -7) (undo-tree-id2 . -15)) nil (25157 32100 599602 0) 0 nil])
+([nil nil ((#("(require-package 'undo-tree)" 0 1 (fontified t) 1 17 (fontified t) 17 18 (fontified t) 18 26 (fontified t) 26 27 (fontified t rear-nonsticky t) 27 28 (fontified t)) . 968) (undo-tree-id4 . -18) (undo-tree-id5 . -18) (undo-tree-id6 . -18) (undo-tree-id7 . -18) (undo-tree-id8 . 28) (undo-tree-id9 . -1) (undo-tree-id10 . 27) (undo-tree-id11 . -27) (undo-tree-id12 . 1) (undo-tree-id13 . -28) (t 25157 32100 0 0)) nil (25157 32119 195201 0) 0 nil])
+([nil nil ((#("(defun lsy-installed-pkgs()" 0 1 (fontified t) 1 6 (fontified t face font-lock-keyword-face) 6 7 (fontified t) 7 25 (fontified t face font-lock-function-name-face) 25 27 (fontified t)) . 969) (t 25157 32119 0 0)) nil (25157 32232 473821 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 969)) nil (25157 32232 473820 0) 0 nil])
+([nil nil ((#("  (loop for pkg in lsy-pkgs" 0 3 (fontified t) 3 7 (fontified t face font-lock-keyword-face) 7 21 (fontified t) 21 27 (fontified t)) . 969)) nil (25157 32232 473819 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 969)) nil (25157 32232 473819 0) 0 nil])
+([nil nil ((#("        when (not (package-installed-p pkg)) do (return nil)" 0 49 (fontified t) 49 55 (fontified t face font-lock-keyword-face) 55 60 (fontified t)) . 969)) nil (25157 32232 473818 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 969)) nil (25157 32232 473817 0) 0 nil])
+([nil nil ((#("        finally (return t)))" 0 17 (fontified t) 17 23 (fontified t face font-lock-keyword-face) 23 28 (fontified t)) . 969)) nil (25157 32232 473817 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 969)) nil (25157 32232 473816 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 969)) nil (25157 32232 473815 0) 0 nil])
+([nil nil ((#("(unless (lsy-installed-pkgs)" 0 1 (fontified t) 1 7 (fontified t face font-lock-keyword-face) 7 28 (fontified t)) . 969)) nil (25157 32232 473814 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 969)) nil (25157 32232 473814 0) 0 nil])
+([nil nil ((#("  (message \"%s\" \"Refreshing pkg database...\")" 0 11 (fontified t) 11 15 (fontified t face font-lock-string-face) 15 16 (fontified t) 16 44 (fontified t face font-lock-string-face) 44 45 (fontified t)) . 969)) nil (25157 32232 473813 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 969)) nil (25157 32232 473812 0) 0 nil])
+([nil nil ((#("  (package-refresh-contents)" 0 28 (fontified t)) . 969)) nil (25157 32232 473811 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 969)) nil (25157 32232 473811 0) 0 nil])
+([nil nil ((#("  " 0 2 (fontified t)) . -969)) nil (25157 32233 418303 0) 0 nil])
+([nil nil ((993 . 997) (992 . 994) (#("(" 0 1 (fontified nil)) . -992) (991 . 993)) nil (25157 32253 12692 0) 0 nil] [nil nil ((#("    (when (not (package-installed-p pkg))" 0 5 (fontified t) 5 9 (fontified t face font-lock-keyword-face) 9 41 (fontified t)) . 992)) ((992 . 1033)) (25157 32232 999835 0) 0 nil])
+([nil nil ((997 . 998)) nil (25157 32253 12691 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 992) (undo-tree-id14 . -1)) ((992 . 993)) (25157 32232 788907 0) 0 nil])
+([nil nil ((993 . 1008) (#("requi" 0 5 (fontified t)) . -993) (undo-tree-id19 . -5) 998) nil (25157 32253 12690 0) 0 nil])
+([nil nil ((#("      (package-install pkg))))" 0 30 (fontified t)) . 992)) ((992 . 1022)) (25157 32232 473793 0) 0 nil])
+([nil nil ((1008 . 1011)) nil (25157 32253 12689 0) 0 nil])
+nil
+([nil nil ((#("a" 0 1 (fontified t)) . -1010) (undo-tree-id18 . -1) 1011) nil (25157 32253 12688 0) 0 nil])
+([nil nil ((1010 . 1011)) nil (25157 32253 12686 0) 0 nil])
+([nil nil ((1011 . 1012)) nil (25157 32253 12685 0) 0 nil])
+([nil nil ((1013 . 1014)) nil (25157 32253 12685 0) 0 nil])
+([nil nil ((#("    (when (not (package-installed-p pkg))" 0 5 (fontified t) 5 9 (fontified t face font-lock-keyword-face) 9 41 (fontified t)) . 1015)) nil (25157 32253 12684 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1015)) nil (25157 32253 12683 0) 0 nil])
+([nil nil ((#("      (package-install pkg))))" 0 30 (fontified t)) . 1015)) nil (25157 32253 12682 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1015) (undo-tree-id17 . -1)) nil (25157 32253 12682 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1015) (undo-tree-id16 . -1)) nil (25157 32253 12680 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1015) (undo-tree-id15 . -1)) nil (25157 32253 12675 0) 0 nil])
+([nil nil ((1014 . 1017) (t 25157 32253 0 0)) nil (25157 32255 423608 0) 0 nil])
+([nil nil ((947 . 951) (t 25157 32255 0 0)) nil (25157 32271 234578 0) 0 nil])
+([nil nil ((1020 . 1026) (1019 . 1021) (#("(" 0 1 (fontified nil)) . -1019) (1019 . 1020)) nil (25157 32271 234576 0) 0 nil])
+([nil nil ((#("(dolist)" 0 1 (fontified t) 1 7 (fontified t face font-lock-keyword-face) 7 8 (fontified t)) . 1019) (undo-tree-id20 . 8) (undo-tree-id21 . -1)) nil (25157 32271 234573 0) 0 nil])
+([nil nil ((1019 . 1023) (t 25157 32271 0 0)) nil (25157 33229 91183 0) 0 nil])
+([nil nil ((#("(require 'package)" 0 1 (fontified t) 1 8 (fontified t face font-lock-keyword-face) 8 10 (fontified t) 10 17 (fontified t face font-lock-constant-face) 17 18 (fontified t)) . 1129)) nil (25157 33229 91180 0) 0 nil])
+([nil nil ((nil rear-nonsticky nil 1036 . 1037) (nil fontified nil 1036 . 1037) (nil fontified nil 1029 . 1036) (nil fontified nil 1027 . 1029) (nil fontified nil 1020 . 1027) (nil fontified nil 1019 . 1020) (1019 . 1037)) nil (25157 33229 91175 0) 0 nil])
+([nil nil ((1037 . 1040) (t 25157 33229 0 0)) nil (25157 33234 690110 0) 0 nil])
+([nil nil ((#(";;-------------------" 0 2 (fontified t face font-lock-comment-delimiter-face) 2 21 (fontified t face font-lock-comment-face)) . 1121)) nil (25157 33234 690109 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33234 690109 0) 0 nil])
+([nil nil ((#(";;elpa" 0 2 (fontified t face font-lock-comment-delimiter-face) 2 6 (fontified t face font-lock-comment-face)) . 1121)) nil (25157 33234 690108 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33234 690107 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121) (undo-tree-id24 . -1)) nil (25157 33234 690106 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121) (undo-tree-id23 . -1)) nil (25157 33234 690104 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121) (undo-tree-id22 . -1)) nil (25157 33234 690099 0) 0 nil])
+([nil nil ((#("(let ((local-package-el (locate-library \"package\")))" 0 1 (fontified t) 1 4 (fontified t face font-lock-keyword-face) 4 25 (fontified t) 25 40 (fontified t) 40 49 (fontified t face font-lock-string-face) 49 52 (fontified t)) . 1121) (t 25157 33234 0 0)) nil (25157 33294 471455 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33294 471454 0) 0 nil])
+([nil nil ((#("  (when (string-match-p (concat \"^\" (regexp-quote user-emacs-directory))" 0 3 (fontified t) 3 7 (fontified t face font-lock-keyword-face) 7 28 (fontified t) 28 32 (fontified t) 32 35 (fontified t face font-lock-string-face) 35 72 (fontified t)) . 1121)) nil (25157 33294 471453 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33294 471452 0) 0 nil])
+([nil nil ((#("                        local-package-el)" 0 41 (fontified t)) . 1121)) nil (25157 33294 471451 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33294 471451 0) 0 nil])
+([nil nil ((#("    (warn \"Please remove the local package.el, which is no longer supported (%s)\"" 0 5 (fontified t) 5 9 (fontified t face font-lock-warning-face) 9 10 (fontified t) 10 81 (fontified t face font-lock-string-face)) . 1121)) nil (25157 33294 471450 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33294 471449 0) 0 nil])
+([nil nil ((#("          local-package-el)))" 0 29 (fontified t)) . 1121)) nil (25157 33294 471448 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33294 471447 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33294 471446 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33294 471446 0) 0 nil])
+([nil nil ((#(";;; Install into separate package dirs for each Emacs version, to prevent bytecode incompatibility" 0 4 (fontified t face font-lock-comment-delimiter-face) 4 19 (fontified t face font-lock-comment-face) 19 24 (fontified t face font-lock-comment-face) 24 61 (fontified t face font-lock-comment-face) 61 91 (fontified t face font-lock-comment-face) 91 92 (fontified t face font-lock-comment-face) 92 94 (fontified t face font-lock-comment-face) 94 98 (fontified t face font-lock-comment-face)) . 1121)) nil (25157 33294 471445 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33294 471444 0) 0 nil])
+([nil nil ((#("(let ((versioned-package-dir" 0 1 (fontified t) 1 4 (fontified t face font-lock-keyword-face) 4 7 (fontified t) 7 28 (fontified t)) . 1121)) nil (25157 33294 471443 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33294 471442 0) 0 nil])
+([nil nil ((#("       (expand-file-name (format \"elpa-%s.%s\" emacs-major-version emacs-minor-version)" 0 33 (fontified t) 33 45 (fontified t face font-lock-string-face) 45 86 (fontified t)) . 1121)) nil (25157 33294 471442 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33294 471441 0) 0 nil])
+([nil nil ((#("                         user-emacs-directory)))" 0 1 (fontified t) 1 48 (fontified t)) . 1121)) nil (25157 33294 471440 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33294 471439 0) 0 nil])
+([nil nil ((#("  (setq package-user-dir versioned-package-dir))" 0 3 (fontified t) 3 7 (fontified t face font-lock-keyword-face) 7 48 (fontified t)) . 1121)) nil (25157 33294 471438 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1121)) nil (25157 33294 471437 0) 0 nil])
+([nil nil ((#("(defun require-package (package &optional min-version no-refresh)
+  \"Install given PACKAGE, optionally requiring MIN-VERSION.
+If NO-REFRESH is non-nil, the available package lists will not be
+re-downloaded in order to locate PACKAGE.\"
+  (if (package-installed-p package min-version)
+      t
+    (if (or (assoc package package-archive-contents) no-refresh)
+        (if (boundp 'package-selected-packages)
+            ;; Record this as a package the user installed explicitly
+            (package-install package nil)
+          (package-install package))
+      (progn
+        (package-refresh-contents)
+        (require-package package min-version t)))))
+
+
+(defun maybe-require-package (package &optional min-version no-refresh)
+  \"Try to install PACKAGE, and return non-nil if successful.
+In the event of failure, return nil and print a warning message.
+Optionally require MIN-VERSION.  If NO-REFRESH is non-nil, the
+available package lists will not be re-downloaded in order to
+locate PACKAGE.\"
+  (condition-case err
+      (require-package package min-version no-refresh)
+    (error
+     (message \"Couldn't install optional package `%s': %S\" package err)
+     nil)))
+
+;;; Fire up package.el
+
+(setq package-enable-at-startup nil)
+;;(package-initialize)
+" 0 1 (fontified t) 1 6 (fontified t face font-lock-keyword-face) 6 7 (fontified t) 7 22 (fontified t face font-lock-function-name-face) 22 25 (fontified t) 25 32 (fontified t) 32 41 (fontified t face font-lock-type-face) 41 66 (fontified t) 66 68 (fontified t) 68 161 (fontified t face font-lock-doc-face) 161 192 (fontified t face font-lock-doc-face) 192 210 (fontified t face font-lock-doc-face) 210 211 (fontified t face font-lock-doc-face) 211 234 (face font-lock-doc-face fontified t) 234 235 (fontified t) 235 238 (fontified t) 238 240 (fontified t face font-lock-keyword-face) 240 246 (fontified t) 246 283 (fontified t) 283 296 (fontified t) 296 298 (fontified t face font-lock-keyword-face) 298 300 (fontified t) 300 302 (fontified t face font-lock-keyword-face) 302 365 (fontified t) 365 367 (fontified t face font-lock-keyword-face) 367 416 (fontified t) 416 419 (fontified t face font-lock-comment-delimiter-face) 419 458 (fontified t face font-lock-comment-face) 458 474 (fontified t face font-lock-comment-face) 474 499 (fontified t) 499 516 (fontified t) 516 560 (fontified t) 560 565 (fontified t face font-lock-keyword-face) 565 566 (fontified t) 566 656 (fontified t) 656 661 (fontified t face font-lock-keyword-face) 661 662 (fontified t) 662 683 (fontified t face font-lock-function-name-face) 683 693 (fontified t) 693 702 (fontified t face font-lock-type-face) 702 729 (fontified t) 729 735 (fontified t face font-lock-doc-face) 735 788 (face font-lock-doc-face fontified t) 788 974 (fontified t face font-lock-doc-face) 974 978 (fontified t face font-lock-doc-face) 978 994 (fontified t face font-lock-doc-face) 994 998 (fontified t) 998 1012 (fontified t face font-lock-keyword-face) 1012 1016 (fontified t) 1016 1017 (fontified t) 1017 1077 (fontified t) 1077 1082 (fontified t face font-lock-warning-face) 1082 1097 (fontified t) 1097 1133 (fontified t face font-lock-string-face) 1133 1135 (fontified t face (font-lock-constant-face font-lock-string-face)) 1135 1141 (fontified t face font-lock-string-face) 1141 1168 (fontified t) 1168 1172 (fontified t face font-lock-comment-delimiter-face) 1172 1191 (fontified t face font-lock-comment-face) 1191 1193 (fontified t) 1193 1197 (fontified t face font-lock-keyword-face) 1197 1229 (fontified t) 1229 1231 (fontified t face font-lock-comment-delimiter-face) 1231 1252 (fontified t face font-lock-comment-face)) . -1411) (undo-tree-id26 . -1252) (undo-tree-id27 . -1252) 2663) nil (25157 33294 471436 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1411)) nil (25157 33294 471432 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1411) (undo-tree-id25 . -1)) nil (25157 33294 471428 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 4706) (t 25157 33294 0 0)) nil (25157 33337 689558 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 4706)) nil (25157 33337 689554 0) 0 nil])
+([nil nil ((#("(require 'cl-lib)" 0 1 (fontified t) 1 8 (fontified t face font-lock-keyword-face) 8 10 (fontified t) 10 14 (fontified t face font-lock-constant-face) 14 16 (fontified t face font-lock-constant-face) 16 17 (fontified t)) . 1505) (undo-tree-id2 . 17) (undo-tree-id3 . -1) (undo-tree-id4 . 16) (undo-tree-id5 . -16) (undo-tree-id6 . 1) (undo-tree-id7 . -17) (t 25157 33337 0 0)) nil (25157 34257 408786 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1505) (undo-tree-id1 . -1)) nil (25157 34257 408780 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1505) (undo-tree-id0 . -1)) nil (25157 34257 408775 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1478) (t 25157 34257 0 0)) nil (25157 34259 383440 0) 0 nil])
+([nil nil ((1503 . 1504)) nil (25157 34259 383435 0) 0 nil])
+([nil nil ((#("(require 'cl)" 0 1 (fontified t) 1 8 (fontified t face font-lock-keyword-face) 8 10 (fontified t) 10 12 (fontified t face font-lock-constant-face) 12 13 (fontified t)) . 430) (undo-tree-id8 . -12) (t 25157 34259 0 0)) nil (25157 34264 134572 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 430)) nil (25157 34264 134561 0) 0 nil])
+([nil nil ((#("(require-package 'cl-lib)" 0 25 (fontified t)) . 1464) (undo-tree-id9 . -20) (t 25157 34264 0 0)) nil (25157 34276 354511 0) 0 nil])
+([nil nil ((nil rear-nonsticky nil 453 . 454) (nil fontified nil 429 . 454) (429 . 454)) nil (25157 34276 354498 0) 0 nil])
+([nil nil ((454 . 455) (t 25157 34276 0 0)) nil (25157 34277 428491 0) 0 nil])
+([nil nil ((apply activate-cursor-for-undo 1) (1561 . 1562) (apply deactivate-cursor-after-undo 1) (apply activate-cursor-for-undo 2) (1620 . 1621) (apply deactivate-cursor-after-undo 2) (apply activate-cursor-for-undo 3) (1657 . 1658) (apply deactivate-cursor-after-undo 3) (apply activate-cursor-for-undo 4) (1711 . 1712) (apply deactivate-cursor-after-undo 4) (apply activate-cursor-for-undo 5) (1762 . 1763) (apply deactivate-cursor-after-undo 5) (apply activate-cursor-for-undo 6) (1810 . 1811) (apply deactivate-cursor-after-undo 6) (apply activate-cursor-for-undo 7) (1812 . 1813) (apply deactivate-cursor-after-undo 7) (apply activate-cursor-for-undo 8) (1866 . 1867) (apply deactivate-cursor-after-undo 8) (apply activate-cursor-for-undo 9) (1937 . 1938) (apply deactivate-cursor-after-undo 9) (apply activate-cursor-for-undo 10) (1978 . 1979) (apply deactivate-cursor-after-undo 10) (apply activate-cursor-for-undo 11) (2040 . 2041) (apply deactivate-cursor-after-undo 11) (apply activate-cursor-for-undo 12) (2136 . 2137) (apply deactivate-cursor-after-undo 12) (1493 . 1494) (apply activate-cursor-for-undo 1) (1559 . 1560) (apply deactivate-cursor-after-undo 1) (apply activate-cursor-for-undo 2) (1617 . 1618) (apply deactivate-cursor-after-undo 2) (apply activate-cursor-for-undo 3) (1653 . 1654) (apply deactivate-cursor-after-undo 3) (apply activate-cursor-for-undo 4) (1706 . 1707) (apply deactivate-cursor-after-undo 4) (apply activate-cursor-for-undo 5) (1756 . 1757) (apply deactivate-cursor-after-undo 5) (apply activate-cursor-for-undo 6) (1803 . 1804) (apply deactivate-cursor-after-undo 6) (apply activate-cursor-for-undo 7) (1804 . 1805) (apply deactivate-cursor-after-undo 7) (apply activate-cursor-for-undo 8) (1857 . 1858) (apply deactivate-cursor-after-undo 8) (apply activate-cursor-for-undo 9) (1927 . 1928) (apply deactivate-cursor-after-undo 9) (apply activate-cursor-for-undo 10) (1967 . 1968) (apply deactivate-cursor-after-undo 10) (apply activate-cursor-for-undo 11) (2028 . 2029) (apply deactivate-cursor-after-undo 11) (apply activate-cursor-for-undo 12) (2123 . 2124) (apply deactivate-cursor-after-undo 12) (1492 . 1493) (t 25157 34277 0 0)) nil (25157 34371 886729 0) 0 nil])
+([nil nil ((2233 . 2235)) nil (25157 34371 886714 0) 0 nil])
+([nil nil ((2316 . 2318) (t 25157 34371 0 0)) nil (25157 34384 928156 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 2315) (undo-tree-id12 . -1)) nil (25157 34384 928155 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 2314) (undo-tree-id11 . -1)) nil (25157 34384 928153 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 2361) (undo-tree-id10 . -1)) nil (25157 34384 928148 0) 0 nil])
+([nil nil ((nil rear-nonsticky nil 6005 . 6006) (nil fontified nil 5964 . 6006) (5964 . 6006) (t 25157 34384 0 0)) nil (25157 34460 271530 0) 0 nil])
+([nil nil ((#("c:/Users/48944/.emacs.d/lisp/init-local.el" 0 41 (fontified t) 41 42 (rear-nonsticky t fontified t)) . 5964) (undo-tree-id0 . -42) (undo-tree-id1 . -42)) nil (25157 36745 901327 0) 0 nil])
+([nil nil ((963 . 968)) ((#("magit" 0 5 (fontified nil)) . 963) (t 25157 35465 0 0)) (25157 36746 519673 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1055) (undo-tree-id9 . -1) (t 25157 35465 0 0)) nil (25157 36921 508282 0) 0 nil] [nil nil ((6704 . 6708) (t 25157 35465 0 0)) ((#("asdf" 0 4 (fontified t)) . 6704) (undo-tree-id0 . -4) (undo-tree-id1 . -4)) (25157 36744 989316 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1055) (undo-tree-id8 . -1)) nil (25157 36921 508280 0) 0 nil])
+nil
+([nil nil ((#("
+" 0 1 (fontified t)) . 1055) (undo-tree-id7 . -1)) nil (25157 36921 508278 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1055) (undo-tree-id6 . -1)) nil (25157 36921 508277 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1055) (undo-tree-id5 . -1)) nil (25157 36921 508275 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1055) (undo-tree-id4 . -1)) nil (25157 36921 508273 0) 0 nil])
+([nil nil ((#("
+" 0 1 (fontified t)) . 1055) (undo-tree-id3 . -1)) nil (25157 36921 508270 0) 0 nil])
+([nil current ((#("
+" 0 1 (fontified t)) . 1055) (undo-tree-id2 . -1)) nil (25157 36921 508266 0) 0 nil])
 nil
