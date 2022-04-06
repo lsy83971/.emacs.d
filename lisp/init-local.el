@@ -30,6 +30,7 @@
                  ace-jump-mode
                  undo-tree
 		 magit
+		 
                  ))
 
 (dolist (pkg lsy-pkgs) (require-package pkg))
@@ -193,14 +194,15 @@
     ))
 
 (global-undo-tree-mode)
-(global-company-mode)
 
 (global-set-key (kbd "<f7>" ) 'lsy:copy-file-name)
 (global-set-key (kbd "C-4" ) 'ace-jump-mode)
+
 (global-set-key (kbd "S-<left>" ) 'windmove-left)
 (global-set-key (kbd "S-<right>" ) 'windmove-right)
 (global-set-key (kbd "S-<up>" ) 'windmove-up)
 (global-set-key (kbd "S-<down>" ) 'windmove-down)
+
 (global-set-key (kbd "M-w" ) 'lsy-kill)
 (global-set-key (kbd "C-w" ) 'lsy-kill-region)
 (global-set-key (kbd "C-y" ) 'lsy-yank)

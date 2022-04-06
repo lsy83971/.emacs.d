@@ -49,7 +49,7 @@ re-downloaded in order to locate PACKAGE."
    ["#2e3436" "#a40000" "#4e9a06" "#c4a000" "#204a87" "#5c3566" "#729fcf" "#eeeeec"])
  '(custom-enabled-themes '(deeper-blue))
  '(package-selected-packages
-   '(magit nyan-mode electric-spacing ace-jump-mode multiple-cursors fullframe smex ivy-dired-history ivy company-anaconda virtualenvwrapper virtualenv auto-complete-c-headers jedi ecb elpy web-mode expand-region smartparens dash counsel swiper hungry-delete helm-company auto-complete function-args zygospore helm-gtags helm yasnippet ws-butler volatile-highlights use-package undo-tree iedit dtrt-indent counsel-projectile company clean-aindent-mode anzu)))
+   '(f magit nyan-mode electric-spacing ace-jump-mode multiple-cursors fullframe smex ivy-dired-history ivy company-anaconda virtualenvwrapper virtualenv auto-complete-c-headers jedi ecb elpy web-mode expand-region smartparens dash counsel swiper hungry-delete helm-company auto-complete function-args zygospore helm-gtags helm yasnippet ws-butler volatile-highlights use-package undo-tree iedit dtrt-indent counsel-projectile company clean-aindent-mode anzu)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -62,10 +62,13 @@ re-downloaded in order to locate PACKAGE."
   (string-equal system-type "windows-nt")
   (require 'init-cygwin)
 )
-
+(require 'init-company)
 ;;(require 'init-smex)
 ;;(require 'init-exec)
 ;;(require 'init-c)
-(require 'init-python)
+
 ;;(require 'init-sessions)
 (require 'init-local)
+(require 'init-python)
+(require 'init-org)
+(require 'init-rgrep)

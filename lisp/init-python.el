@@ -1,25 +1,15 @@
-
 ;;------------------------------------------------------------
 ;; python
 ;;------------------------------------------------------------
 
-
-
-
-
-
-(defun setpy2 ()
-  (interactive)
-  (setq python-shell-interpreter "python2"))
-
 (defun setpy3 ()
   (interactive)
-  (setq python-shell-interpreter "python3"))
+  (setq python-shell-interpreter "C:/Users/48944/AppData/Local/Programs/Python/Python39/pythonw.exe"))
 
 
 (defun my:python-eval-line ()
     (interactive)
-    (if(use-region-p)
+    (if (use-region-p)
         (elpy-shell-send-region-or-buffer)
       (let (p1 p2)
         (setq p1 (line-beginning-position))
@@ -43,20 +33,26 @@
  (lambda ()
    (elpy-enable)
    (hs-minor-mode)
-   (require 'jedi)
-   (jedi:setup)
-   (setq jedi:complete-on-dot t)
-   (setq python-shell-interpreter "/usr/bin/python3"
-         python-shell-interpreter-args ""
+;;   (require 'jedi)
+;;   (jedi:setup)
+;;   (setq jedi:complete-on-dot t)
+   (setq python-shell-interpreter "C:/Users/48944/AppData/Local/Programs/Python/Python39/pythonw.exe"
+         python-shell-interpreter-args "-i"
          python-shell-prompt-regexp "In \\[[0-9]+\\]: "
          python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: ")
-   (setq jedi:server-args
-         '(
-           "--sys-path" "/usr/local/lib/python3.6/dist-packages"
-           "--sys-path" "/usr/lib/python3/dist-packages"
-           "--sys-path" "/home/lsy/Project/model_vision"
-           ))
-   (setq elpy-rpc-backend "jedi")
+;;   (setq jedi:server-args
+;;         '(
+;;           "--sys-path" "/usr/local/lib/python3.6/dist-packages"
+;;           ;;"--sys-path" "/usr/lib/python3/dist-packages"
+;;           ;;"--sys-path" "/home/lsy/Project/model_vision"
+;;           )
+;;	 )
+   ;;   (setq elpy-rpc-backend "jedi")
+   (setenv "PYTHONIOENCODING" "utf-8")
+   (setq elpy-rpc-python-command "C:/Users/48944/AppData/Local/Programs/Python/Python39/pythonw.exe")
+   (add-to-list 'process-coding-system-alist '("python" . (utf-8 . utf-8)))
+   (add-to-list 'process-coding-system-alist '("elpy" . (utf-8 . utf-8)))
+   (add-to-list 'process-coding-system-alist '("flake8" . (utf-8 . utf-8)))   
    (setq python-indent-offset 4)
    (electric-spacing-mode 1)
    ;;(defvar electric-spacing-operators '(?= ?< ?> ?% ?+ ?- ?* ?/ ?& ?| ?: ?? ?, ?~ ?. ?^ ?\; ?!))
@@ -71,3 +67,23 @@
     ))
 
 (provide 'init-python)
+
+;; (setq python-shell-interpreter "C:/Users/48944/AppData/Local/Programs/Python/Python39/pythonw.exe"
+;;    python-shell-interpreter-args " -i"
+;;    python-shell-completion-native-enable nil
+;;       )
+;; (python-shell-send-string "import os \n")
+;; 
+;;   (setq
+;;    ;; python-shell-interpreter "C:/python/python3/Scripts/ipython3.exe"
+;;    python-shell-interpreter "c:/python/python3/python.exe"
+;;    python-shell-interpreter-args " -i"
+;;    python-shell-completion-native-enable nil
+;;    )
+;; 
+;; (python-shell-get-process)
+;; 
+;; (run-python)
+;; (python-shell-calculate-command)
+
+
