@@ -8,52 +8,40 @@
 ;;                     charset
 ;;                     (font-spec :family "Microsoft YaHei" :size 13)))
 ;;------------------------------------------------------------
-(require-package 'cl-lib)
 
-(setq lsy-pkgs '(
-                 company
-                 hungry-delete
-                 swiper
-                 counsel
-                 dash
-                 smartparens
-                 expand-region
-                 electric-spacing
-                 elpy
-                 yasnippet
-                 auto-complete
-                 ecb
-                 jedi
-                 cedet
-                 nyan-mode
-                 multiple-cursors
-                 ace-jump-mode
-                 undo-tree
-		 magit
-		 
-                 ))
+(use-package cl-lib)
+(use-package company)
+(use-package hungry-delete)
+(use-package swiper)
+(use-package counsel)
+(use-package dash)
+(use-package smartparens)
+(use-package expand-region)
+(use-package electric-spacing)
+(use-package elpy)
+(use-package yasnippet)
+(use-package auto-complete)
+;;(use-package ecb)
+(use-package jedi)
+(use-package cedet)
+(use-package nyan-mode)
+(use-package multiple-cursors)
+(use-package ace-jump-mode)
+(use-package undo-tree)
+(use-package magit)
+(use-package fullframe)
+(use-package lsp-mode)
 
-(dolist (pkg lsy-pkgs) (require-package pkg))
-(require 'package)
+(use-package python-mode
+  :ensure t
+  :hook (python-mode . lsp-deferred)
+  :custom
+  (python-shell-interpreter "pythonw")
+  )
 
 (require 'expand-region)
 (global-set-key (kbd "C-=") 'er/expand-region)
 
-
-
-
-;;; Standard package repositories
-
-;; We include the org repository for completeness, but don't normally
-;; use it.
-
-;; NOTE: In case of MELPA problems, the official mirror URL is
-;; https://www.mirrorservice.org/sites/stable.melpa.org/packages/
-
-
-;;; On-demand installation of packages
-
-(require-package 'fullframe)
 (fullframe list-packages quit-window)
 
 
@@ -153,10 +141,7 @@
 
 ;; when you press RET, the curly braces automatically
 ;; add another newline
-(sp-with-modes '(c-mode c++-mode)
-               (sp-local-pair "{" nil :post-handlers '(("||\n[i]" "RET")))
-               (sp-local-pair "/*" "*/" :post-handlers '((" | " "SPC")
-                                                         ("* ||\n[i]" "RET"))))
+
 
 (global-set-key (kbd "C->") 'mc/mark-next-like-this)
 (global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
