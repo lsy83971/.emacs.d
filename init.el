@@ -1,6 +1,6 @@
 ;;------------------------------------------------------------
-(set-face-attribute
- 'default nil :family "source Code Pro" :height 100 :weight 'semi-bold)
+;;(set-face-attribute
+;; 'default nil :family "source Code Pro" :height 100 :weight 'semi-bold)
 
 ;; Chinese Font 配置中文字体
 ;;(dolist (charset '(kana han symbol cjk-misc bopomofo))
