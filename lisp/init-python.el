@@ -77,14 +77,19 @@
   (setq mark-active nil)
   )
 
-
-
+(use-package electric-spacing)
 
 (use-package python-mode
   :after lsp-mode
+  :hook
+  (python-mode . (lambda ()
+                   (lsp-deferred)
+		   (electric-spacing-mode)
+		   (setq-local electric-spacing-operators '(?= ?< ?> ?% ?+ ?- ?* ?/ ?& ?| ?: ?? ?, ?~ ?. ?^ ?\; ?!))		   
+		   )
+	       
+	       )
   :ensure t
-  :hook ((python-mode . lsp-deferred)
-	 )
   :custom(
 	  ;;(python-shell-interpreter "C:/Users/48944/AppData/Local/Programs/Python/Python39/python.exe")
 	  (python-shell-interpreter "ipython")	  
@@ -96,12 +101,49 @@
 	("C-r" . lsy-python-eval-line)
 	("M-." . lsp-find-definition)
 	("M-," . xref-pop-marker-stack)
-
 	)
-  ;;:config
-  ;;(require 'dap-python)
+  :config
+  (setq read-process-output-max (* 1024 1024))
+  (setq gc-cons-threshold (eval-when-compile (* 1024 1024 1024)))
   )
 
+
+(use-package company
+  :after lsp-mode
+  :hook (lsp-mode . company-mode)
+  :bind (:map company-active-map
+         ("<tab>" . company-complete-selection))
+        (:map lsp-mode-map
+         ("<tab>" . company-indent-or-complete-common))
+  :custom
+  (company-minimum-prefix-length 1)
+  (company-idle-delay 0.0))
+
+(use-package company-box
+  :hook (company-mode . company-box-mode))
+
+(defun baal-setup-lsp-company ()
+  (setq-local company-backends
+	      '(company-capf
+		company-dabbrev
+		company-dabbrev-code
+		;;company-files
+		)))
+(add-hook 'lsp-completion-mode-hook #'baal-setup-lsp-company)				        ;;
+
+;; 												        ;;
+
+(setq company-idle-delay 0.35 ;; How long to wait before popping up				        ;;
+      company-minimum-prefix-length 2 ;; Show the menu after one key press			        ;;
+      company-tooltip-limit 15 ;; Limit on how many options to display			        ;;
+      company-show-numbers t   ;; Show numbers behind options				        ;;
+      company-tooltip-align-annotations t ;; Align annotations to the right			        ;;
+      company-require-match nil           ;; Allow free typing				        ;;
+      company-selection-wrap-around t ;; Wrap around to beginning when you hit bottom of suggestions ;;
+      company-dabbrev-ignore-case t ;; Don't ignore case when completing			        ;;
+      company-dabbrev-downcase t ;; Don't automatically downcase completions			        ;;
+      )											        ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (defun my:hide-or-show ()
 ;;   (interactive)
