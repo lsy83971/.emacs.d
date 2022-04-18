@@ -1,6 +1,6 @@
 ;;------------------------------------------------------------
 ;;(set-face-attribute
-;; 'default nil :family "source Code Pro" :height 100 :weight 'semi-bold)
+;; 'default nil :family "source Code Pro" :height 120 :weight 'semi-bold)
 
 ;; Chinese Font 配置中文字体
 ;;(dolist (charset '(kana han symbol cjk-misc bopomofo))
@@ -15,6 +15,7 @@
 (require 'init-company)
 (require 'init-ui)
 (require 'init-ivy)
+(require 'init-html)
 (require 'init-keymap)
 (require 'init-nav)
 (require 'init-tool)
@@ -39,7 +40,7 @@
  '(elpy-modules nil)
  '(lsp-eslint-enable nil)
  '(package-selected-packages
-   '(no-littering visual-fill-column org-bullets hydra command-log-mode python-mode lsp-mode f magit nyan-mode electric-spacing ace-jump-mode multiple-cursors fullframe smex ivy-dired-history ivy company-anaconda virtualenvwrapper virtualenv auto-complete-c-headers jedi ecb elpy web-mode expand-region smartparens dash counsel swiper hungry-delete helm-company auto-complete function-args zygospore helm-gtags helm yasnippet ws-butler volatile-highlights use-package undo-tree iedit dtrt-indent counsel-projectile company clean-aindent-mode anzu)))
+   '(vue-mode company-web company-web-html emmet-mode no-littering visual-fill-column org-bullets hydra command-log-mode python-mode lsp-mode f magit nyan-mode electric-spacing ace-jump-mode multiple-cursors fullframe smex ivy-dired-history ivy company-anaconda virtualenvwrapper virtualenv auto-complete-c-headers jedi ecb elpy web-mode expand-region smartparens dash counsel swiper hungry-delete helm-company auto-complete function-args zygospore helm-gtags helm yasnippet ws-butler volatile-highlights use-package undo-tree iedit dtrt-indent counsel-projectile company clean-aindent-mode anzu)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

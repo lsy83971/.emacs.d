@@ -92,7 +92,8 @@
   :ensure t
   :custom(
 	  ;;(python-shell-interpreter "C:/Users/48944/AppData/Local/Programs/Python/Python39/python.exe")
-	  (python-shell-interpreter "ipython")	  
+	  
+
 	  (python-shell-prompt-regexp "In \\[[0-9]+\\]: ")
 	  (python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: ")
 	  )
@@ -105,7 +106,12 @@
   :config
   (setq read-process-output-max (* 1024 1024))
   (setq gc-cons-threshold (eval-when-compile (* 1024 1024 1024)))
+  (if (string-equal system-type "windows-nt")
+      (setq python-shell-interpreter "ipython")
+    (setq python-shell-interpreter "python3")
+    )
   )
+
 
 
 (use-package company
