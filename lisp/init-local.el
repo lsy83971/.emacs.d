@@ -20,7 +20,7 @@
   :ensure t
   :hook (python-mode . lsp-deferred)
   :custom
-  (python-shell-interpreter "pythonw")
+  (python-shell-interpreter "python3")
   )
 
 (require 'expand-region)

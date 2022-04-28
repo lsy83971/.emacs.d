@@ -1,6 +1,10 @@
 ;;------------------------------------------------------------
 ;;(set-face-attribute
-;; 'default nil :family "source Code Pro" :height 120 :weight 'semi-bold)
+;; 'default nil :family "source Code Pro" :height 120 :weight 'normal)
+
+(set-face-attribute
+ 'default nil :family "ubuntu mono" :height 130 :weight 'normal)
+
 
 ;; Chinese Font 配置中文字体
 ;;(dolist (charset '(kana han symbol cjk-misc bopomofo))

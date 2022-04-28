@@ -33,6 +33,18 @@
 
 ;; if it was an expression, it has been removed; now evaluate it
 
+
+
+(setq sb (split-string "absd\nasdf" "\n"))
+
+
+(defun lsy-sma (s)
+  (progn
+    
+    )
+  )
+
+
 (defun lsy-python-eval-line ()
   (interactive)
   (setq w (selected-window) p (point))
@@ -47,18 +59,52 @@
       (setq p1 (line-beginning-position) p2 (line-end-position))
       )
     (setq tmp-string (buffer-substring p1 p2))
+    (setq tmp-string (string-replace "\\" "\\\\" tmp-string))
+    (setq tmp-ss (split-string tmp-string "\n"))
+    (defun lsy-find-space (s)
+      (progn
+	(if (string-match "^ +" s)
+	    (match-end 0)
+	  0
+	    )
+	)
+      )
+
+    
+    (setq tmp-h (lsy-find-space (car tmp-ss)))
+    (defun lsy-cut-space (s)
+      (setq tmp-h1 (lsy-find-space s))
+      (setq tmp-h2 (min tmp-h (length s)))
+      (if (>= tmp-h1 tmp-h2)
+	  (substring s tmp-h2)
+	(error "cannot parse")
+	  )
+      )
+    (defun lsy-rec-delete-space(ss)
+      (progn
+	(setq lsy-front (car ss))
+	(setq lsy-back (cdr ss))	
+	(if lsy-front
+	    `(,(lsy-cut-space lsy-front) . ,(lsy-rec-delete-space lsy-back))
+	  nil
+	    )
+	)
+      )
+    (setq tmp-ss1 (lsy-rec-delete-space tmp-ss))
+    (setq tmp-string1 (string-join tmp-ss1 "\n"))
+
     ;;(message tmp-string)    
     (setq tmp-body
 	  (concat
 	   "# -*- coding: utf-8 -*-\n"
 	   "import sys, codecs, os, ast;\n"
-	   "print('\\\n')\n"
+	   ;; "print('\\n')\n"
 	   "print('input:')\n"	   
 	   "__code='''\n"
-	   tmp-string
+	   tmp-string1
 	   "'''\n"
 	   "print('''"
-	   tmp-string
+	   tmp-string1
 	   "''')\n"
 	   "__block = ast.parse(__code, '''tmp''', mode='exec');\n"
 	   "__last = __block.body[-1];\n" ;; the last statement
