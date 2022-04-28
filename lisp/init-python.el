@@ -35,14 +35,6 @@
 
 
 
-(setq sb (split-string "absd\nasdf" "\n"))
-
-
-(defun lsy-sma (s)
-  (progn
-    
-    )
-  )
 
 
 (defun lsy-python-eval-line ()
@@ -69,8 +61,6 @@
 	    )
 	)
       )
-
-    
     (setq tmp-h (lsy-find-space (car tmp-ss)))
     (defun lsy-cut-space (s)
       (setq tmp-h1 (lsy-find-space s))
