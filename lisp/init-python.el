@@ -84,9 +84,7 @@
     ;;      )
 
     (defun lsy-rec-delete-space(ss)
-      (setq res (list))
-      (dolist (sss ss) (add-to-list 'res (lsy-cut-space sss)))
-      res
+      (mapcar 'lsy-cut-space ss)
       )
     
     (setq tmp-ss1 (lsy-rec-delete-space tmp-ss))
@@ -124,6 +122,7 @@
   )
 
 (use-package electric-spacing)
+(use-package elpy)
 
 (use-package python-mode
   :after lsp-mode
