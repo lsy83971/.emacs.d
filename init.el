@@ -42,6 +42,9 @@
    ["#2e3436" "#a40000" "#4e9a06" "#c4a000" "#204a87" "#5c3566" "#729fcf" "#eeeeec"])
  '(custom-enabled-themes '(deeper-blue))
  '(elpy-modules nil)
+ '(lsp-clients-pylsp-library-directories
+   '("/usr/local/lib/python3.6/site-packages" "/usr/local/lib/python3.6"))
+ '(lsp-clients-python-library-directories '("/usr/local/lib/python3.6/site-packages"))
  '(lsp-eslint-enable nil)
  '(package-selected-packages
    '(vue-mode company-web company-web-html emmet-mode no-littering visual-fill-column org-bullets hydra command-log-mode python-mode lsp-mode f magit nyan-mode electric-spacing ace-jump-mode multiple-cursors fullframe smex ivy-dired-history ivy company-anaconda virtualenvwrapper virtualenv auto-complete-c-headers jedi ecb elpy web-mode expand-region smartparens dash counsel swiper hungry-delete helm-company auto-complete function-args zygospore helm-gtags helm yasnippet ws-butler volatile-highlights use-package undo-tree iedit dtrt-indent counsel-projectile company clean-aindent-mode anzu)))

@@ -54,6 +54,7 @@
     (setq tmp-string (string-replace "\\" "\\\\" tmp-string))
     (setq tmp-ss (split-string tmp-string "\n"))
     (defun lsy-find-space (s)
+      "return length of space before first non-space string"
       (progn
 	(if (string-match "^ +" s)
 	    (match-end 0)
@@ -63,6 +64,7 @@
       )
     (setq tmp-h (lsy-find-space (car tmp-ss)))
     (defun lsy-cut-space (s)
+      "cut space in the front part of s"
       (setq tmp-h1 (lsy-find-space s))
       (setq tmp-h2 (min tmp-h (length s)))
       (if (>= tmp-h1 tmp-h2)
@@ -70,16 +72,23 @@
 	(error "cannot parse")
 	  )
       )
+;;    (defun lsy-rec-delete-space(ss)
+;;      (progn
+;;	(setq lsy-front (car ss))
+;;	(setq lsy-back (cdr ss))	
+;;	(if lsy-front
+;;	    `(,(lsy-cut-space lsy-front) . ,(lsy-rec-delete-space lsy-back))
+;;	  nil
+;;	    )
+;;	)
+    ;;      )
+
     (defun lsy-rec-delete-space(ss)
-      (progn
-	(setq lsy-front (car ss))
-	(setq lsy-back (cdr ss))	
-	(if lsy-front
-	    `(,(lsy-cut-space lsy-front) . ,(lsy-rec-delete-space lsy-back))
-	  nil
-	    )
-	)
+      (setq res (list))
+      (dolist (sss ss) (add-to-list 'res (lsy-cut-space sss)))
+      res
       )
+    
     (setq tmp-ss1 (lsy-rec-delete-space tmp-ss))
     (setq tmp-string1 (string-join tmp-ss1 "\n"))
 
@@ -107,6 +116,7 @@
 	   )
 	  )
     ;;(message tmp-body)
+    (sleep-for 0.01)
     (python-shell-send-string tmp-body)
     )
   (select-window w)
@@ -121,8 +131,11 @@
   (python-mode . (lambda ()
                    (lsp-deferred)
 		   (electric-spacing-mode)
-		   (setq-local electric-spacing-operators '(?= ?< ?> ?% ?+ ?- ?* ?/ ?& ?| ?: ?? ?, ?~ ?. ?^ ?\; ?!))		   
+
+		   (setq-local electric-spacing-operators '(?= ?< ?> ?% ?+ ?- ?* ?/ ?& ?| ?: ?? ?, ?~ ?. ?^ ?\; ?!))
+		   (elpy-mode)
 		   )
+	       
 	       
 	       )
   :ensure t
@@ -132,19 +145,22 @@
 
 	  (python-shell-prompt-regexp "In \\[[0-9]+\\]: ")
 	  (python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: ")
+	  (python-shell-interpreter "python3.10")
 	  )
   :bind
   (:map python-mode-map
 	("C-r" . lsy-python-eval-line)
 	("M-." . lsp-find-definition)
 	("M-," . xref-pop-marker-stack)
+	("C-<up>" . python-nav-backward-defun)
+	("C-<down>" . python-nav-forward-defun)	
 	)
   :config
   (setq read-process-output-max (* 1024 1024))
   (setq gc-cons-threshold (eval-when-compile (* 1024 1024 1024)))
   (if (string-equal system-type "windows-nt")
       (setq python-shell-interpreter "ipython")
-    (setq python-shell-interpreter "python3")
+    (setq python-shell-interpreter "python3.10")
     )
   )
 
