@@ -2,8 +2,10 @@
 ;;(set-face-attribute
 ;; 'default nil :family "source Code Pro" :height 120 :weight 'normal)
 
+;;(set-face-attribute
+;; 'default nil :family "ubuntu mono" :height 110 :weight 'normal)
 (set-face-attribute
- 'default nil :family "ubuntu mono" :height 130 :weight 'normal)
+ 'default nil :family "UbuntuMono" :height 120 :weight 'normal)
 
 
 ;; Chinese Font 配置中文字体
