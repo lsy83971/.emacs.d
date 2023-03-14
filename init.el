@@ -34,26 +34,23 @@
   (require 'init-cygwin)
   )
 
-(add-to-list 'load-path "~/.emacs.d/custom")
+;;(add-to-list 'load-path "~/.emacs.d/custom")
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(ansi-color-names-vector
-   ["#2e3436" "#a40000" "#4e9a06" "#c4a000" "#204a87" "#5c3566" "#729fcf" "#eeeeec"])
  '(custom-enabled-themes '(deeper-blue))
  '(elpy-modules nil)
- '(lsp-clients-pylsp-library-directories
-   '("/usr/local/lib/python3.6/site-packages" "/usr/local/lib/python3.6"))
- '(lsp-clients-python-library-directories '("/usr/local/lib/python3.6/site-packages"))
- '(lsp-eslint-enable nil)
+ '(elpy-rpc-python-command "python3")
  '(package-selected-packages
-   '(vue-mode company-web company-web-html emmet-mode no-littering visual-fill-column org-bullets hydra command-log-mode python-mode lsp-mode f magit nyan-mode electric-spacing ace-jump-mode multiple-cursors fullframe smex ivy-dired-history ivy company-anaconda virtualenvwrapper virtualenv auto-complete-c-headers jedi ecb web-mode expand-region smartparens dash counsel swiper hungry-delete helm-company auto-complete function-args zygospore helm-gtags helm yasnippet ws-butler volatile-highlights use-package undo-tree iedit dtrt-indent counsel-projectile company clean-aindent-mode anzu)))
+   '(vue-mode company-web company-web-html emmet-mode no-littering visual-fill-column org-bullets hydra command-log-mode python-mode f magit nyan-mode electric-spacing ace-jump-mode multiple-cursors fullframe smex ivy-dired-history ivy company-anaconda virtualenvwrapper virtualenv auto-complete-c-headers jedi ecb web-mode expand-region smartparens dash counsel swiper hungry-delete helm-company auto-complete function-args zygospore helm-gtags helm yasnippet ws-butler use-package undo-tree iedit dtrt-indent counsel-projectile company clean-aindent-mode anzu)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(company-tooltip ((t nil)))
+ '(company-tooltip-selection ((t (:extend t :background "tomato"))))
  '(org-level-1 ((t (:weight bold :height 1.2)))))
 

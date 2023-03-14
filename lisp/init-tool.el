@@ -33,8 +33,6 @@
 
 (use-package magit)
 (use-package fullframe)
-(use-package lsp-mode)
-
 (provide 'init-tool)
 
 

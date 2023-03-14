@@ -56,11 +56,12 @@
 
 ;; Better UI configuration
 
-;; (use-package nyan-mode)
+(use-package nyan-mode)
+(nyan-mode t)
 ;; (use-package command-log-mode)
 
 ;;(use-package all-the-icons)
-;; (use-package doom-modeline
+;;(use-package doom-modeline
 ;;  :init (doom-modeline-mode 1)
 ;;  :custom ((doom-modeline-height 15)))
 

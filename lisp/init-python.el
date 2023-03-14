@@ -1,4 +1,4 @@
-(elpy-enable)
+;;(elpy-enable)
 ;;------------------------------------------------------------
 ;; python
 ;;------------------------------------------------------------
@@ -12,19 +12,30 @@
 
 
 
- (defun lsy-python-eval-line ()
+(require 'subr-x)
+
+(defun lsy-python-eval-line ()
      (interactive)
      (if(use-region-p)
-         (elpy-shell-send-region-or-buffer)
-       (let (p1 p2)
-         (setq p1 (line-beginning-position))
-         (setq p2 (line-end-position))
-         (goto-char p1)
-         (push-mark p2)
-         (setq mark-active t)
-         (elpy-shell-send-region-or-buffer)
-         (goto-char p2)
-         (setq mark-active nil)
+	 (let* ((p1 (region-beginning))
+		(p2 (region-end))
+		(p3 (line-beginning-position))
+		(p4 (line-end-position))
+		(tmp-string (buffer-substring p1 p2))
+		(tmp-string (string-trim  tmp-string))
+	       ;;(tmp-string (string-replace "\\" "\\\\" tmp-string))
+	       )
+	   (if (and (<= p2 p4) (>= p1 p3))
+	       (python-shell-send-string tmp-string)
+	       (elpy-shell-send-region-or-buffer)
+	     ))
+       (let* ((p1 (line-beginning-position))
+	     (p2 (line-end-position))
+	     (tmp-string (buffer-substring p1 p2))
+	     ;;(tmp-string (string-replace "\\" "\\\\" tmp-string))
+	     (tmp-string (string-trim  tmp-string))
+	     )
+	 (python-shell-send-string tmp-string)
          )))
 
 ;; if it was an expression, it has been removed; now evaluate it
@@ -123,7 +134,8 @@
 		   (electric-spacing-mode)
 		   (setq-local electric-spacing-operators
 			       '(?= ?< ?> ?% ?+ ?- ?* ?/ ?& ?| ?: ?? ?, ?~ ?. ?^ ?\; ?!))
-		   (elpy-mode)
+		   (elpy-enable)
+		   (company-mode t)
 		   )
 	       
 	       
@@ -147,6 +159,13 @@
   :config
   (setq read-process-output-max (* 1024 1024))
   (setq gc-cons-threshold (eval-when-compile (* 1024 1024 1024)))
+  
+  (setq company-backends
+   '(elpy-company-backend company-bbdb
+			  company-semantic company-cmake company-capf company-clang company-files
+	      (company-dabbrev-code company-gtags company-etags company-keywords)
+	      company-oddmuse company-dabbrev)
+	)
   (if (string-equal system-type "windows-nt")
       (setq python-shell-interpreter "ipython")
     (setq python-shell-interpreter "python3")
@@ -155,20 +174,21 @@
 
 
 
-(use-package company
-  :bind (:map company-active-map
-              ("<tab>" . company-complete-selection))
-  :custom(
-	  (company-minimum-prefix-length 1)
-	  (company-idle-delay 0.0)	  
-	  )
-  )
+;; (use-package company
+;;   :bind (:map company-active-map
+;;               ("<tab>" . company-complete-selection))
+;;   :custom(
+;; 	  (company-minimum-prefix-length 1)
+;; 	  (company-idle-delay 0.0)	  
+;; 	  )
+;;   )
 
 (use-package company-box
   :hook (company-mode . company-box-mode))
 
 
-(setq company-idle-delay 0.35 ;; How long to wait before popping up				        ;;
+;;(setq company-dabbrev-downcase nil)
+(setq company-idle-delay 0.1 ;; How long to wait before popping up				        ;;
       company-minimum-prefix-length 2 ;; Show the menu after one key press			        ;;
       company-tooltip-limit 15 ;; Limit on how many options to display			        ;;
       company-show-numbers t   ;; Show numbers behind options				        ;;
@@ -176,7 +196,7 @@
       company-require-match nil           ;; Allow free typing				        ;;
       company-selection-wrap-around t ;; Wrap around to beginning when you hit bottom of suggestions ;;
       company-dabbrev-ignore-case t ;; Don't ignore case when completing			        ;;
-      company-dabbrev-downcase t ;; Don't automatically downcase completions			        ;;
+      company-dabbrev-downcase nil ;; Don't automatically downcase completions			        ;;
       )											        ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -227,11 +247,7 @@
 ;;    (local-set-key (kbd "<f2>") 'my:hide-or-show)
 ;;    (local-set-key (kbd "M-.") 'jedi:goto-definition)
 ;;    (local-set-key (kbd "M-,") 'jedi:goto-definition-pop-marker)
-
-
 ;;     ))
 
-;; (add-hook
-;;  'python-mode-hook
 
 (provide 'init-python)

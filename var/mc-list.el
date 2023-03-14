@@ -3,9 +3,20 @@
 
 (setq mc/cmds-to-run-for-all
       '(
+	backward-sexp
+	forward-sexp
+	hungry-delete-forward
+	lsy-kill
+	lsy-kill-region
+	lsy-yank
+	mouse-set-region
+	py-electric-colon
+	py-electric-comment
+	undo-tree-visualize
 	))
 
 (setq mc/cmds-to-run-once
       '(
 	hungry-delete-backward
+	undo-tree-visualize
 	))
