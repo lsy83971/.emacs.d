@@ -1,5 +1,5 @@
 (use-package ace-jump-mode)
-(global-set-key (kbd "C-4" ) 'ace-jump-mode)
+(global-set-key (kbd "C-2" ) 'ace-jump-mode)
 
 (use-package multiple-cursors
   :bind

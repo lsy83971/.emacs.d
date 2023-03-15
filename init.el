@@ -27,7 +27,7 @@
 (require 'init-tool)
 (require 'init-org)
 (require 'init-local)
-(require 'init-python)
+;;(require 'init-python)
 (require 'init-rgrep)
 (when
   (string-equal system-type "windows-nt")

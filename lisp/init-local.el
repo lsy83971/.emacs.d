@@ -15,16 +15,7 @@
 ;;(use-package swiper)
 ;;(use-package counsel)
 ;;(use-package dash)
-
-(use-package python-mode
-  :ensure t
-  :custom
-  (python-shell-interpreter "python3")
-  )
-
 (require 'expand-region)
-
-
 (fullframe list-packages quit-window)
 
 

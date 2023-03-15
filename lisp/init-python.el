@@ -1,17 +1,3 @@
-;;(elpy-enable)
-;;------------------------------------------------------------
-;; python
-;;------------------------------------------------------------
-;;(defun setpy3 ()
-;;  (interactive)
-;;  (setq python-shell-interpreter "C:/Users/48944/AppData/Local/Programs/Python/Python39/pythonw.exe")
-;;         python-shell-prompt-regexp "In \\[[0-9]+\\]: "
-;;         python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: ")
-;;  
-;;  )
-
-
-
 (require 'subr-x)
 
 (defun lsy-python-shell-insert-string (s)
@@ -57,104 +43,20 @@
 	)
       )))
 
-;; if it was an expression, it has been removed; now evaluate it
-
-
-;;(defun lsy-python-eval-line ()
-;;  (interactive)
-;;  (setq w (selected-window) p (point))
-;;  (run-python)
-;;  (end-of-buffer)  
-;;  (setq ws (selected-window) ps (point))  
-;;  (select-window w)
-;;  (goto-char p)
-;;  (let (p1 p2)
-;;    (if (use-region-p)
-;; 	(setq p1 (region-beginning) p2 (region-end))
-;;      (setq p1 (line-beginning-position) p2 (line-end-position))
-;;      )
-;;    (setq tmp-string (buffer-substring p1 p2))
-;;    (setq tmp-string (string-replace "\\" "\\\\" tmp-string))
-;;    (setq tmp-ss (split-string tmp-string "\n"))
-;;    (defun lsy-find-space (s)
-;;      "return length of space before first non-space string"
-;;      (progn
-;;	(if (string-match "^ +" s)
-;;	    (match-end 0)
-;;	  0
-;;	    )
-;;	)
-;;      )
-;;    (setq tmp-h (lsy-find-space (car tmp-ss)))
-;;    (defun lsy-cut-space (s)
-;;      "cut space in the front part of s"
-;;      (setq tmp-h1 (lsy-find-space s))
-;;      (setq tmp-h2 (min tmp-h (length s)))
-;;      (if (>= tmp-h1 tmp-h2)
-;;	  (substring s tmp-h2)
-;;	(error "cannot parse")
-;;	  )
-;;      )
-;;    (defun lsy-rec-delete-space(ss)
-;;      (progn
-;;	(setq lsy-front (car ss))
-;;	(setq lsy-back (cdr ss))	
-;;	(if lsy-front
-;;	    `(,(lsy-cut-space lsy-front) . ,(lsy-rec-delete-space lsy-back))
-;;	  nil
-;;	    )
-;;	)
-    ;;      )
-
-;;    (defun lsy-rec-delete-space(ss)
-;;      (mapcar 'lsy-cut-space ss)
-;;      )
-;;    
-;;    (setq tmp-ss1 (lsy-rec-delete-space tmp-ss))
-;;    (setq tmp-string1 (string-join tmp-ss1 "\n"))
-;;
-;;    ;;(message tmp-string)    
-;;    (setq tmp-body
-;;	  (concat
-;;	   "# -*- coding: utf-8 -*-\n"
-;;	   "import sys, codecs, os, ast;\n"
-;;	   ;; "print('\\n')\n"
-;;	   "print('input:')\n"	   
-;;	   "__code='''\n"
-;;	   tmp-string1
-;;	   "'''\n"
-;;	   "print('''"
-;;	   tmp-string1
-;;	   "''')\n"
-;;	   "__block = ast.parse(__code, '''tmp''', mode='exec');\n"
-;;	   "__last = __block.body[-1];\n" ;; the last statement
-;;	   "__isexpr = isinstance(__last,ast.Expr);\n" ;; is it an expression?
-;;	   "_ = __block.body.pop() if __isexpr else None;\n" ;; if so, remove it
-;;	   "exec(compile(__block, '''tmp''', mode='exec'));\n" ;; execute everything else
-;;	   "output=eval(compile(ast.Expression(__last.value), '''tmp''', mode='eval')) if __isexpr else None\n"
-;;	   "print('''output:\\\n''')\n"
-;;	   "_=print(output) if __isexpr else None\n"
-;;	   )
-;;	  )
-;;    ;;(message tmp-body)
-;;    (sleep-for 0.01)
-;;    (python-shell-send-string tmp-body)
-;;    )
-;;  (select-window w)
-;;  (setq mark-active nil)
-;;  )
 
 (use-package electric-spacing)
 (use-package elpy)
-
+;;(company--capf-data-real)
+;;(company--capf-data)
 (use-package python-mode
   :hook
   (python-mode . (lambda ()
 		   (electric-spacing-mode)
+		   ;;(company-mode t)		   
 		   (setq-local electric-spacing-operators
 			       '(?= ?< ?> ?% ?+ ?- ?* ?/ ?& ?| ?: ?? ?, ?~ ?. ?^ ?\; ?!))
 		   (elpy-enable)
-		   (company-mode t)
+		   (add-to-list 'company-backends 'elpy-company-backend)
 		   )
 	       
 	       
@@ -179,12 +81,7 @@
   (setq read-process-output-max (* 1024 1024))
   (setq gc-cons-threshold (eval-when-compile (* 1024 1024 1024)))
   
-  (setq company-backends
-   '(elpy-company-backend company-bbdb
-			  company-semantic company-cmake company-capf company-clang company-files
-	      (company-dabbrev-code company-gtags company-etags company-keywords)
-	      company-oddmuse company-dabbrev)
-	)
+  
   (if (string-equal system-type "windows-nt")
       (setq python-shell-interpreter "ipython")
     (setq python-shell-interpreter "python3")
@@ -192,31 +89,6 @@
   )
 
 
-
-;; (use-package company
-;;   :bind (:map company-active-map
-;;               ("<tab>" . company-complete-selection))
-;;   :custom(
-;; 	  (company-minimum-prefix-length 1)
-;; 	  (company-idle-delay 0.0)	  
-;; 	  )
-;;   )
-
-(use-package company-box
-  :hook (company-mode . company-box-mode))
-
-
-;;(setq company-dabbrev-downcase nil)
-(setq company-idle-delay 0.1 ;; How long to wait before popping up				        ;;
-      company-minimum-prefix-length 2 ;; Show the menu after one key press			        ;;
-      company-tooltip-limit 15 ;; Limit on how many options to display			        ;;
-      company-show-numbers t   ;; Show numbers behind options				        ;;
-      company-tooltip-align-annotations t ;; Align annotations to the right			        ;;
-      company-require-match nil           ;; Allow free typing				        ;;
-      company-selection-wrap-around t ;; Wrap around to beginning when you hit bottom of suggestions ;;
-      company-dabbrev-ignore-case t ;; Don't ignore case when completing			        ;;
-      company-dabbrev-downcase nil ;; Don't automatically downcase completions			        ;;
-      )											        ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (defun my:hide-or-show ()
