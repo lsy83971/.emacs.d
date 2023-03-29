@@ -17,7 +17,7 @@
   
   :hook (
 	 (emacs-lisp-mode . company-mode)
-	 (python-mode . company-mode)
+	 ;;(python-mode . company-mode)
 	 )
   )
 

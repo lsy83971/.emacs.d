@@ -20,7 +20,5 @@
              (file-name (or (buffer-file-name) temp-file-name)))
         (python-shell-send-file file-name process temp-file-name t))))
 
-(global-yas-mode)
-
 (yas-global-mode)
 

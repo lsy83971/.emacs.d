@@ -4,12 +4,14 @@
 (setq mc/cmds-to-run-for-all
       '(
 	backward-sexp
+	counsel-M-x
 	forward-sexp
 	hungry-delete-forward
 	lsy-kill
 	lsy-kill-region
 	lsy-yank
 	mouse-set-region
+	overwrite-mode
 	py-electric-colon
 	py-electric-comment
 	undo-tree-visualize

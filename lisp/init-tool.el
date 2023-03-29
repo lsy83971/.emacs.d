@@ -1,7 +1,7 @@
-(use-package hungry-delete
-  :config
-  (global-hungry-delete-mode)
-  )
+;; (use-package hungry-delete
+;;   :config
+;;   (global-hungry-delete-mode)
+;;   )
 
 (use-package expand-region
   :bind (("C-=" . er/expand-region))
