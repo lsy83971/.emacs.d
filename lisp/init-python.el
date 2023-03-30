@@ -14,7 +14,9 @@
 
 (defun lsy-python-eval-line ()
   (interactive)
-  (save-window-excursion
+  (let* (
+	 (window (selected-window))
+	 )
     (elpy-shell--ensure-shell-running)
     ;; TODO
     ;; NOT UPDATE completion-at-point-function
@@ -56,9 +58,11 @@
 	  (lsy-python-shell-insert-string tmp-string)
 	  (python-shell-send-string tmp-string)
 	  )
-	))    
+	))
+
+    (select-window window)
     )
-)
+  )
 
 
 (use-package electric-spacing)
@@ -106,3 +110,5 @@
   )
 
 (provide 'init-python)
+
+
