@@ -83,7 +83,6 @@
     )
   )
 
-
 (use-package electric-spacing)
 (use-package elpy)
 ;;(company--capf-data-real)
