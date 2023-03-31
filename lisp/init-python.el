@@ -12,12 +12,31 @@
     )
   )
 
+
+(defun lsy-change-cwd ()
+  (let ((
+	 cmd (concat
+	      "import os\n"
+	      "os.chdir("
+	      "'"
+	      (file-name-directory (directory-file-name (buffer-file-name)))
+	      "'"
+	      ")"
+	      )
+	     ))
+    (python-shell-send-string cmd)
+    ))
+
 (defun lsy-python-eval-line ()
   (interactive)
   (let* (
 	 (window (selected-window))
 	 )
-    (elpy-shell--ensure-shell-running)
+    (if (get-buffer-process "*Python*")
+	nil
+      (elpy-shell--ensure-shell-running)
+      (lsy-change-cwd)
+      )
     ;; TODO
     ;; NOT UPDATE completion-at-point-function
     (defun company--capf-data-real ()
