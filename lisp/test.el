@@ -22,4 +22,4 @@
 
 (yas-global-mode)
 
-(file-name-nondirectory (directory-file-name (buffer)))
+(file-name-directory (directory-file-name (buffer-file-name)))

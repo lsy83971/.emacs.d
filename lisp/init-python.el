@@ -12,7 +12,6 @@
     )
   )
 
-
 (defun lsy-change-cwd ()
   (let ((
 	 cmd (concat
@@ -21,7 +20,11 @@
 	      "'"
 	      (file-name-directory (directory-file-name (buffer-file-name)))
 	      "'"
-	      ")"
+	      ")\n"
+	      "import pandas as pd\n"
+	      "pd.set_option('display.max_rows',500)\n"
+	      "import warnings\n"
+	      "warnings.filterwarnings('ignore')\n"
 	      )
 	     ))
     (python-shell-send-string cmd)
@@ -100,6 +103,7 @@
       (elpy-enable)
       (setq-local company-backends (cons 'elpy-company-backend company-backends))
       (company-mode 1)
+      (rainbow-delimiters-mode)
       ))
    )
   
