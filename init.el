@@ -1,18 +1,4 @@
 ;;------------------------------------------------------------
-
-(when (display-graphic-p)  ; 仅对图形界面生效
-  (set-language-environment "UTF-8")
-  (set-default-coding-systems 'utf-8)
-  ;; 启用XIM输入协议，适配fcitx/ibus
-  (setq default-input-method "xim")
-  (toggle-input-method nil))  ; 初始化输入方法状态
-;; 强制设置中文环境变量，解决图形界面继承不到的问题 
-;; (global-unset-key (kbd "C-SPC"))
-(setenv "LC_CTYPE" "zh_CN.UTF-8")
-(setenv "XMODIFIERS" "@im=xim")
-;;
-
-
 (defun my/set-font ()
   (interactive)
   (set-face-attribute 'default nil
@@ -36,19 +22,34 @@
                   (font-spec :family "Noto Color Emoji" :size 12))
   )
 
-(add-hook 'after-init-hook 'my/set-font)
-;;(add-hook 'window-setup-hook 'my/set-font)
-(when (daemonp)
-  (add-hook 'server-after-make-frame-hook 'my/set-font))
+(when (not (eq system-type 'windows-nt))
+  (when (display-graphic-p)  ; 仅对图形界面生效
+    (set-language-environment "UTF-8")
+    (set-default-coding-systems 'utf-8)
+    ;; 启用XIM输入协议，适配fcitx/ibus
+    (setq default-input-method "xim")
+    (toggle-input-method nil))  ; 初始化输入方法状态
+  ;; 强制设置中文环境变量，解决图形界面继承不到的问题 
+  ;; (global-unset-key (kbd "C-SPC"))
+  (setenv "LC_CTYPE" "zh_CN.UTF-8")
+  (setenv "XMODIFIERS" "@im=xim")
+  ;;
+
+  (add-hook 'after-init-hook 'my/set-font)
+  ;;(add-hook 'window-setup-hook 'my/set-font)
+  (when (daemonp)
+    (add-hook 'server-after-make-frame-hook 'my/set-font))
 
 
-;; need install rime-dev fcitx...
-(use-package rime
-  :ensure t
-  :custom
-  (default-input-method "rime")
-  (rime-show-candidate 'minibuffer)
-  :bind
+  ;; need install rime-dev fcitx...
+  (use-package rime
+    :ensure t
+    :custom
+    (default-input-method "rime")
+    (rime-show-candidate 'minibuffer)
+    :bind
+    )
+
   )
 
 

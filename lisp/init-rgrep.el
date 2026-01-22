@@ -1,5 +1,10 @@
-(require 'f)
-
+(use-package f
+  :ensure t
+  ;; 不设置 :defer 或设置为 nil 表示立即加载
+  :config
+  ;; 这里可以放 f 加载后的配置
+  (message "f library loaded")
+  )
 ;; lsy-frp find record path
 (setq lsy-frp (f-join (f-full (getenv "HOME")) ".tmp_lsy_find_path"))
 (defun lsy-find-append-mark (dir)
