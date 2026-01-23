@@ -88,9 +88,12 @@
 
 (use-package electric-spacing)
 (use-package elpy)
-;;(company--capf-data-real)
-;;(company--capf-data)
+(use-package rainbow-delimiters
+  :ensure t
+  :defer t)
+
 (use-package python-mode
+  :ensure t
   :hook
   (
    (python-mode
@@ -106,12 +109,10 @@
       (rainbow-delimiters-mode)
       ))
    )
-  
   :ensure t
   :custom(
 	  (python-shell-prompt-regexp "In \\[[0-9]+\\]: ")
 	  (python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: ")
-	  (python-shell-interpreter "python3")
 	  )
   :bind
   (:map python-mode-map
@@ -125,11 +126,53 @@
   :config
   (setq read-process-output-max (* 1024 1024))
   (setq gc-cons-threshold (eval-when-compile (* 1024 1024 1024)))
-  (if (string-equal system-type "windows-nt")
-      (setq python-shell-interpreter "ipython")
+  (if (eq system-type 'windows-nt)
+      (progn
+	(setq python-shell-interpreter "C:/Users/52258/AppData/Local/Python/bin/python.exe")
+	(setq elpy-rpc-python-command "C:/Users/52258/AppData/Local/Python/bin/python.exe")
+	)
     (setq python-shell-interpreter "python3")
     )
   )
+
+(if (eq system-type 'windows-nt)
+    (progn
+	(setq python-shell-interpreter "C:/Users/52258/AppData/Local/Python/bin/python.exe")
+	(setq elpy-rpc-python-command "C:/Users/52258/AppData/Local/Python/bin/python.exe")
+      )
+  )
+
+(when (eq system-type 'windows-nt)
+  ;; 1. 设置 Python 环境变量
+  (setenv "PYTHONIOENCODING" "utf-8")
+  (setenv "PYTHONUTF8" "1")  ; Python 3.7+
+  
+  ;; 2. 设置 Elpy RPC 参数
+  (setq elpy-rpc-python-command python-shell-interpreter)
+  (setq elpy-rpc-python-command-args
+        '("-c" "import sys; sys.stdout.reconfigure(encoding='utf-8'); import elpy.__main__; elpy.__main__.main()"))
+  
+  ;; 3. 强制使用 UTF-8 编码
+  (prefer-coding-system 'utf-8)
+  (setq default-process-coding-system '(utf-8 . utf-8))
+  
+  ;; 4. 设置 Python shell 编码
+  (setq python-shell-encoding "utf-8")
+  (setq python-shell-font-lock-encoding "utf-8")
+  
+  ;; 5. 为 Elpy RPC 进程单独设置环境
+  (defun my/elpy-rpc-environment ()
+    "为 Elpy RPC 设置环境变量"
+    (let ((process-environment (copy-sequence process-environment)))
+      (setenv "PYTHONIOENCODING" "utf-8")
+      (setenv "PYTHONUTF8" "1")
+      (setenv "LC_ALL" "en_US.UTF-8")
+      (setenv "LANG" "en_US.UTF-8")
+      process-environment))
+  (setq elpy-rpc--process-environment-function #'my/elpy-rpc-environment))
+
+(setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+(setq elpy-modules (delq 'elpy-module-syntax-checking elpy-modules))
 
 (provide 'init-python)
 
