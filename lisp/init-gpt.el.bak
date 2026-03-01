@@ -1,0 +1,24 @@
+(use-package gptel
+  :ensure t
+  :config
+  (gptel-make-openai "OpenRouter"
+    :host "openrouter.ai"
+    :endpoint "/api/v1/chat/completions"
+    :stream t
+    :key "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"
+    :models '(deepseek/deepseek-v3.2
+	      anthropic/claude-sonnet-4-6
+	      )
+    ;; :models '(anthropic/claude-sonnet-4-6
+    ;;           openai/gpt-4o)
+    )
+
+  (setq gptel-backend (gptel-get-backend "OpenRouter")
+	gptel-model   'anthropic/claude-sonnet-4-6
+	;gptel-model 'deepseek/deepseek-v3.2
+	)
+        
+  )
+
+
+
