@@ -68,6 +68,7 @@
 (require 'init-tool)
 (require 'init-org)
 (require 'init-local)
+(require 'init-gptel)
 (require 'init-python)
 (require 'init-rgrep)
 (require 'init-c)
