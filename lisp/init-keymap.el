@@ -1,6 +1,7 @@
 (global-set-key (kbd "C-1") 'set-mark-command)
 (global-set-key (kbd "C-t") 'anzu-query-replace)
 (global-set-key (kbd "C-j") 'mc/edit-lines)
+(global-set-key (kbd "C-3") 'toggle-input-method)
 
 (defun my-backward-delete-word ()
   "向后删除单词，不保存到 kill ring。"

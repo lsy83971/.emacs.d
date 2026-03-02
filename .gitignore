@@ -5,6 +5,8 @@ ede-projects.el
 elpa-26.3/
 elpa/
 elpy/
+eln-cache/
+rime/
 var/
 projectile-bookmarks.eld
 recentf

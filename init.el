@@ -1,56 +1,33 @@
-;;------------------------------------------------------------
+(setq package-check-signature nil)
 (defun my/set-font ()
   (interactive)
   (set-face-attribute 'default nil
-		    ;;:font "Sarasa Fixed SC"
-		    :font "UbuntuMono"
-		    :height 120)
-  
-  (dolist (charset '(kana han cjk-misc bopomofo))
-      (set-fontset-font t charset
-		    (font-spec
-		     ;;:family "Noto Sans CJK SC"
-		     ;;:family "UbuntuMono"
-		     ;;:family "Sarasa Fixed SC"
-		     :family "WenQuanYi Micro Hei Mono"
-		     :size 12
-		     )
-		    )
-  
-      )
-  (set-fontset-font t 'emoji
-                  (font-spec :family "Noto Color Emoji" :size 12))
+                      :font "Sarasa Fixed SC"
+                      :height 120)
+  (setq-default line-spacing 0))
+
+(setq inhibit-compacting-font-caches t)
+(add-hook 'after-init-hook 'my/set-font)
+(add-hook 'after-init-hook
+          (lambda ()
+            (setq-default line-height nil)
+            (set-face-attribute 'default nil :font "Sarasa Fixed SC" :height 120)
+            ;; 固定行高为字体高度，不随内容变化
+            (setq x-stretch-cursor t)))
+
+;;(setq debug-on-error t)
+;;(setq debug-on-error nil)
+
+
+;; need install rime-dev fcitx...
+(use-package rime
+  :ensure t
+  :custom
+  (default-input-method "rime")
+  (rime-show-candidate 'minibuffer)
+  :bind
   )
 
-(when (not (eq system-type 'windows-nt))
-  (when (display-graphic-p)  ; 仅对图形界面生效
-    (set-language-environment "UTF-8")
-    (set-default-coding-systems 'utf-8)
-    ;; 启用XIM输入协议，适配fcitx/ibus
-    (setq default-input-method "xim")
-    (toggle-input-method nil))  ; 初始化输入方法状态
-  ;; 强制设置中文环境变量，解决图形界面继承不到的问题 
-  ;; (global-unset-key (kbd "C-SPC"))
-  (setenv "LC_CTYPE" "zh_CN.UTF-8")
-  (setenv "XMODIFIERS" "@im=xim")
-  ;;
-
-  (add-hook 'after-init-hook 'my/set-font)
-  ;;(add-hook 'window-setup-hook 'my/set-font)
-  (when (daemonp)
-    (add-hook 'server-after-make-frame-hook 'my/set-font))
-
-
-  ;; need install rime-dev fcitx...
-  (use-package rime
-    :ensure t
-    :custom
-    (default-input-method "rime")
-    (rime-show-candidate 'minibuffer)
-    :bind
-    )
-
-  )
 
 
 
@@ -68,7 +45,7 @@
 (require 'init-tool)
 (require 'init-org)
 (require 'init-local)
-(require 'init-gptel)
+(require 'init-gpt)
 (require 'init-python)
 (require 'init-rgrep)
 (require 'init-c)
@@ -101,6 +78,25 @@
 
 (load-theme 'tango)
 
+(add-hook 'kill-emacs-hook
+          (lambda ()
+            ;; 1. 先关输入法
+            (ignore-errors (deactivate-input-method))
+            ;; 2. 再显式 finalize，让 rime 自己清理
+            (ignore-errors (rime-lib-finalize))
+            ;; 3. 把所有 rime 相关 timer 清掉
+            (ignore-errors
+              (dolist (timer timer-list)
+                (when (string-match-p "rime"
+                        (format "%s" (timer--function timer)))
+                  (cancel-timer timer)))))
+          -101)
+;;(add-hook 'kill-emacs-query-functions
+;;          (lambda ()
+;;            (when current-input-method
+;;              (deactivate-input-method))
+;;            t)
+;;          nil t)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -112,7 +108,7 @@
  '(elpy-modules nil)
  '(elpy-rpc-python-command "python3")
  '(package-selected-packages
-   '(bazel treemacs-all-the-icons rime tango zenburn-theme modus-themes company-lsp lsp-ui flycheck projectile ox-pandoc w3m pyim rainbow-delimiters google-this popup vue-mode company-web company-web-html emmet-mode no-littering visual-fill-column org-bullets hydra command-log-mode python-mode f magit nyan-mode electric-spacing ace-jump-mode multiple-cursors fullframe smex ivy-dired-history ivy company-anaconda virtualenvwrapper virtualenv auto-complete-c-headers jedi ecb web-mode expand-region smartparens dash counsel swiper hungry-delete helm-company auto-complete function-args zygospore helm-gtags helm yasnippet ws-butler use-package undo-tree iedit dtrt-indent counsel-projectile company clean-aindent-mode anzu))
+   '(eat vterm gptel gnu-elpa-keyring-update bazel treemacs-all-the-icons rime tango zenburn-theme modus-themes company-lsp lsp-ui flycheck projectile ox-pandoc w3m pyim rainbow-delimiters google-this popup vue-mode company-web company-web-html emmet-mode no-littering visual-fill-column org-bullets hydra command-log-mode python-mode f magit nyan-mode electric-spacing ace-jump-mode multiple-cursors fullframe smex ivy-dired-history ivy company-anaconda virtualenvwrapper virtualenv auto-complete-c-headers jedi ecb web-mode expand-region smartparens dash counsel swiper hungry-delete helm-company auto-complete function-args zygospore helm-gtags helm yasnippet ws-butler use-package undo-tree iedit dtrt-indent counsel-projectile company clean-aindent-mode anzu))
  '(python-shell-completion-native-enable nil)
  '(warning-suppress-log-types '((comp) (comp)))
  '(warning-suppress-types '((comp))))
