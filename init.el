@@ -46,6 +46,7 @@
 (require 'init-org)
 (require 'init-local)
 (require 'init-gpt)
+(require 'init-claude)
 (require 'init-python)
 (require 'init-rgrep)
 (require 'init-c)
@@ -108,7 +109,25 @@
  '(elpy-modules nil)
  '(elpy-rpc-python-command "python3")
  '(package-selected-packages
-   '(eat vterm gptel gnu-elpa-keyring-update bazel treemacs-all-the-icons rime tango zenburn-theme modus-themes company-lsp lsp-ui flycheck projectile ox-pandoc w3m pyim rainbow-delimiters google-this popup vue-mode company-web company-web-html emmet-mode no-littering visual-fill-column org-bullets hydra command-log-mode python-mode f magit nyan-mode electric-spacing ace-jump-mode multiple-cursors fullframe smex ivy-dired-history ivy company-anaconda virtualenvwrapper virtualenv auto-complete-c-headers jedi ecb web-mode expand-region smartparens dash counsel swiper hungry-delete helm-company auto-complete function-args zygospore helm-gtags helm yasnippet ws-butler use-package undo-tree iedit dtrt-indent counsel-projectile company clean-aindent-mode anzu))
+   '(ace-jump-mode anzu auto-complete auto-complete-c-headers bazel
+		   claude-code clean-aindent-mode command-log-mode
+		   company company-anaconda company-lsp company-web
+		   company-web-html counsel counsel-projectile dash
+		   dtrt-indent ecb electric-spacing emmet-mode
+		   expand-region f flycheck fullframe function-args
+		   gnu-elpa-keyring-update google-this gptel helm
+		   helm-company helm-gtags hungry-delete hydra iedit
+		   inheritenv ivy ivy-dired-history jedi lsp-ui magit
+		   modus-themes multiple-cursors no-littering
+		   nyan-mode org-bullets ox-pandoc popup projectile
+		   pyim python-mode rainbow-delimiters rime
+		   smartparens smex swiper tango
+		   treemacs-all-the-icons undo-tree virtualenv
+		   virtualenvwrapper visual-fill-column vterm vue-mode
+		   w3m web-mode ws-butler yasnippet zenburn-theme
+		   zygospore))
+ '(package-vc-selected-packages
+   '((claude-code :url "https://github.com/stevemolitor/claude-code.el")))
  '(python-shell-completion-native-enable nil)
  '(warning-suppress-log-types '((comp) (comp)))
  '(warning-suppress-types '((comp))))

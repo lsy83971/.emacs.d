@@ -1,0 +1,290 @@
+(use-package gptel
+  :ensure t
+  :config
+  (gptel-make-openai "OpenRouter"
+    :host "openrouter.ai"
+    :endpoint "/api/v1/chat/completions"
+    :stream t
+    :key "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"
+    :models '(deepseek/deepseek-v3.2
+              anthropic/claude-sonnet-4-6))
+
+  (setq gptel-backend (gptel-get-backend "OpenRouter")
+        ;;gptel-model   'deepseek/deepseek-v3.2
+        gptel-model   'anthropic/claude-sonnet-4-6
+        gptel-proxy   "http://127.0.0.1:7890")
+
+  (defvar my/clickhouse-host "10.20.128.181")
+  (defvar my/clickhouse-port "8123")
+  (defvar my/clickhouse-user "ai_reader")
+  (defvar my/clickhouse-password "fingfingha")
+  (defvar my/clickhouse-database "default")
+  (defvar my/workspace-dir "/mnt/lishiyu/AI/")
+
+  (make-directory my/workspace-dir t)
+  (advice-add 'gptel--openai-format-tool-id :override #'identity)
+  (advice-add 'gptel--openai-unformat-tool-id :override #'identity)
+
+  ;; 修复：将 properties plist (:sql {...}) 转成 hash table {"sql": {...}}
+  (advice-add 'gptel--parse-tools :filter-return
+              (lambda (tools-vec)
+                (mapc
+                 (lambda (tool)
+                   (let* ((func (plist-get tool :function))
+                          (params (plist-get func :parameters))
+                          (props (plist-get params :properties)))
+                     (let ((ht (make-hash-table :test 'equal)))
+                       (when (and props (listp props))
+                         (cl-loop for (k v) on props by #'cddr
+                                  do (puthash (string-trim-left (symbol-name k) ":")
+                                              v ht)))
+                       (plist-put params :properties ht))))
+                 tools-vec)
+                tools-vec))
+
+  (setq gptel-tools
+        (list
+         (gptel-make-tool
+          :name "eval_elisp"
+          :description "Evaluate Emacs Lisp code and return the result. Use this to inspect Emacs state, test configurations, query face attributes, check variables, and debug elisp code."
+          :args (list '(:name "code"
+                        :type string
+                        :description "Elisp code to evaluate"))
+          :include t
+          :function (lambda (code)
+                      (condition-case err
+                          (let ((result (eval (read code) t)))
+                            (format "%S" result))
+                        (error (format "Error: %S" err)))))
+
+         (gptel-make-tool
+          :name "query_clickhouse"
+          :description "Execute a SQL query on ClickHouse and return results. Use this to explore schemas and fetch data."
+          :args (list '(:name "sql"
+                        :type string
+                        :description "SQL query to execute"))
+          :include t
+          :function (lambda (sql)
+                      (let ((result (shell-command-to-string
+                                     (format "curl -s 'http://%s:%s/?user=%s&password=%s&database=%s&query=%s'"
+                                             my/clickhouse-host
+                                             my/clickhouse-port
+                                             my/clickhouse-user
+                                             my/clickhouse-password
+                                             my/clickhouse-database
+                                             (url-hexify-string sql)))))
+                        (if (string-empty-p result)
+                            "No results."
+                          (substring result 0 (min 5000 (length result)))))))
+
+         (gptel-make-tool
+          :name "run_python"
+          :description "Execute Python code for data analysis and factor computation. Has pandas, numpy, scipy. Working dir is /tmp/gptel-workspace/."
+          :args (list '(:name "code"
+                        :type string
+                        :description "Python code to execute"))
+          :include t
+          :function (lambda (code)
+                      (let ((script-file (concat my/workspace-dir "gptel_script.py")))
+                        (with-temp-file script-file
+                          (insert (format "import os\nos.chdir('%s')\n" my/workspace-dir))
+                          (insert code))
+                        (let ((result (shell-command-to-string
+                                       (format "python3 %s 2>&1" script-file))))
+                          (if (string-empty-p result)
+                              "Code executed with no output."
+                            (substring result 0 (min 8000 (length result))))))))
+
+         (gptel-make-tool
+          :name "read_file"
+          :description "Read contents of a file in the workspace."
+          :args (list '(:name "filepath"
+                        :type string
+                        :description "File path to read"))
+          :include t
+          :function (lambda (filepath)
+                      (let ((path (if (file-name-absolute-p filepath)
+                                      filepath
+                                    (concat my/workspace-dir filepath))))
+                        (if (file-exists-p path)
+                            (with-temp-buffer
+                              (insert-file-contents path)
+                              (let ((content (buffer-string)))
+                                (substring content 0 (min 8000 (length content)))))
+                          (format "File not found: %s" path)))))
+
+         (gptel-make-tool
+          :name "write_file"
+          :description "Write content to a file in the workspace."
+          :args (list '(:name "filename"
+                        :type string
+                        :description "Filename to write")
+                      '(:name "content"
+                        :type string
+                        :description "Content to write"))
+          :include t
+          :function (lambda (filename content)
+                      (let ((path (if (file-name-absolute-p filename)
+                                      filename
+                                    (concat my/workspace-dir filename))))
+                        (with-temp-file path
+                          (insert content))
+                        (format "Written: %s" path))))
+
+         (gptel-make-tool
+          :name "list_files"
+          :description "List files in the workspace directory."
+          :args nil
+          :include t
+          :function (lambda ()
+                      (mapconcat #'identity
+                                 (directory-files my/workspace-dir nil nil t)
+                                 "\n")))))
+
+  ;; ── 醒目提示符 ──────────────────────────────────────────────────────────
+  (defface my/gptel-prompt-face
+    '((t :foreground "#E5A50A" :weight bold :family "Ubuntu Mono"))
+    "Face for gptel user prompt prefix.")
+
+  (defface my/gptel-response-face
+    '((t :foreground "#7C9EFF" :weight bold :family "Ubuntu Mono"))
+    "Face for gptel AI response prefix.")
+
+  (setq gptel-prompt-prefix-alist
+        `((markdown-mode . ,(propertize "\n>>> " 'face 'my/gptel-prompt-face))
+          (org-mode      . ,(propertize "\n>>> " 'face 'my/gptel-prompt-face))
+          (text-mode     . ,(propertize "\n>>> " 'face 'my/gptel-prompt-face))))
+
+  (setq gptel-response-prefix-alist
+        `((markdown-mode . ,(propertize "\nAssistant\n" 'face 'my/gptel-response-face))
+          (org-mode      . ,(propertize "\nAssistant\n" 'face 'my/gptel-response-face))
+          (text-mode     . ,(propertize "\nAssistant\n" 'face 'my/gptel-response-face))))
+
+  ;; ── 代码块美化 overlay ──────────────────────────────────────────────────
+  ;; 展开状态: 开头显示 【lang】，结尾隐藏
+  ;; 折叠状态: 开头显示 【lang】 ▶，结尾隐藏
+
+  (defface my/gptel-block-top-face
+    '((t :foreground "#7C9EFF" :weight bold :family "Ubuntu Mono"))
+    "Face for code block top label.")
+
+  (defface my/gptel-block-arrow-face
+    '((t :foreground "#E5A50A" :weight bold :family "Ubuntu Mono"))
+    "Face for folded code block arrow indicator.")
+
+  (defun my/gptel-block-top-str (lang &optional folded)
+    "生成开头 overlay 字符串，折叠时末尾加 ▶。"
+    (let ((label (if (and lang (not (string-empty-p (string-trim lang))))
+                     (string-trim lang)
+                   "code")))
+      (concat
+       (propertize (concat "【" label "】")
+                   'face 'my/gptel-block-top-face)
+       (if folded
+           (propertize " ▶" 'face 'my/gptel-block-arrow-face)
+         ""))))
+
+  (defun my/gptel-make-block-overlay (beg end display-str)
+    "在 beg..end 上创建 display overlay，display-str 为 nil 时隐藏。"
+    (let ((ov (make-overlay beg end nil t nil)))
+      (overlay-put ov 'my/gptel-codeblock t)
+      (overlay-put ov 'evaporate t)
+      (if display-str
+          (overlay-put ov 'display display-str)
+        (overlay-put ov 'invisible t))
+      ov))
+
+  (defun my/gptel-refresh-block-overlays ()
+    "扫描 buffer，为所有代码块的开头/结尾行创建美化 overlay。"
+    (interactive)
+    (remove-overlays (point-min) (point-max) 'my/gptel-codeblock t)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^```\\(.*\\)$" nil t)
+        (let* ((bol (line-beginning-position))
+               (eol (line-end-position))
+               (lang (match-string-no-properties 1))
+               (lang-trimmed (string-trim lang)))
+          (if (string-empty-p lang-trimmed)
+              ;; 结尾 ``` → 隐藏整行（含换行符）
+              (my/gptel-make-block-overlay bol (1+ eol) nil)
+            ;; 开头 ```lang → 检查是否已折叠，决定是否显示 ▶
+            (let* ((folded (cl-find-if
+                            (lambda (o) (overlay-get o 'invisible))
+                            (overlays-in eol (1+ eol)))))
+              (my/gptel-make-block-overlay bol eol
+                                           (my/gptel-block-top-str lang-trimmed folded))))
+          (forward-line 1)))))
+
+  ;; 折叠/展开时同步刷新 overlay（保持 ▶ 状态正确）
+  (defun my/gptel-cycle-block-and-refresh (orig-fn)
+    (funcall orig-fn)
+    (my/gptel-refresh-block-overlays))
+
+  (advice-add 'gptel-markdown-cycle-block :around #'my/gptel-cycle-block-and-refresh)
+
+  ;; 每次 gptel 响应结束后刷新
+  (add-hook 'gptel-post-response-functions
+            (lambda (&rest _) (my/gptel-refresh-block-overlays)))
+
+  ;; ── buffer 字体/高度统一 ────────────────────────────────────────────────
+  (defun my/gptel-buffer-setup ()
+    (let ((mono-family (face-attribute 'default :family))
+          (base-height (face-attribute 'default :height)))
+      (dolist (face '(markdown-header-face-1
+                      markdown-header-face-2
+                      markdown-header-face-3
+                      markdown-header-face-4
+                      markdown-header-face-5
+                      markdown-header-face-6
+                      markdown-header-face))
+        (face-remap-add-relative face :height base-height))
+      (dolist (face '(fixed-pitch
+                      markdown-code-face
+                      markdown-inline-code-face
+                      markdown-pre-face
+                      markdown-language-info-face
+                      markdown-language-keyword-face
+                      markdown-markup-face
+                      font-lock-string-face))
+        (face-remap-add-relative face
+                                 :height base-height
+                                 :family mono-family)))
+    (setq-local line-spacing 0.15)
+    (my/gptel-refresh-block-overlays))
+
+  (add-hook 'gptel-mode-hook #'my/gptel-buffer-setup))
+
+
+
+(defun my/set-font ()
+  (interactive)
+  (set-face-attribute 'default nil
+                      :font "UbuntuMono"
+                      :height 120)
+  (dolist (charset '(kana han cjk-misc bopomofo))
+    (set-fontset-font t charset
+                      (font-spec :family "WenQuanYi Micro Hei Mono"
+                                 :size 5.5)))
+  (set-fontset-font t 'emoji
+                    (font-spec :family "Noto Color Emoji" :size 12)))
+
+(defun my/sync-cjk-font-scale ()
+  "滚轮缩放时同步中文字体大小。"
+  (let* ((base-height 120)  ;; 与 :height 保持一致
+         (scale (expt text-scale-mode-step text-scale-mode-amount))
+         (new-size (/ (* base-height scale) 10.0)))
+    (dolist (charset '(kana han cjk-misc bopomofo))
+      (set-fontset-font t charset
+                        (font-spec :family "WenQuanYi Micro Hei Mono"
+                                   :size new-size)))
+    (set-fontset-font t 'emoji
+                      (font-spec :family "Noto Color Emoji"
+                                 :size new-size))))
+
+(add-hook 'text-scale-mode-hook #'my/sync-cjk-font-scale)
+(add-hook 'text-scale-mode-hook #'my/set-font)
+(add-hook 'text-scale-mode-hook #'my/sync-cjk-font-scale)
+
+(provide 'init-gpt)
+
