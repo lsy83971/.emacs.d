@@ -1,13 +1,13 @@
 (setq package-check-signature nil)
-(defun my/set-font ()
-  (interactive)
-  (set-face-attribute 'default nil
-                      :font "Sarasa Fixed SC"
-                      :height 120)
-  (setq-default line-spacing 0))
+;;(defun my/set-font ()
+;;  (interactive)
+;;  (set-face-attribute 'default nil
+;;                      :font "Sarasa Fixed SC"
+;;                      :height 120)
+;;  (setq-default line-spacing 0))
+;;(add-hook 'after-init-hook 'my/set-font)
 
 (setq inhibit-compacting-font-caches t)
-(add-hook 'after-init-hook 'my/set-font)
 (add-hook 'after-init-hook
           (lambda ()
             (setq-default line-height nil)
