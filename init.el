@@ -1,4 +1,13 @@
 (setq package-check-signature nil)
+;; macOS: Command ↔ Option 互换
+(when (eq system-type 'darwin)
+  (defun my/swap-command-option ()
+    "Swap Command and Option keys on macOS."
+    (interactive)
+    (setq mac-command-modifier 'meta)
+    (setq mac-option-modifier 'super)
+    (message "Command=Meta, Option=Super"))
+  (my/swap-command-option))
 (setq inhibit-compacting-font-caches t)
 (defun my/set-frame-font-setting (&optional frame)
    (setq-default line-height nil)
@@ -14,13 +23,14 @@
 
 
 ;; need install rime-dev fcitx...
-(use-package rime
-  :ensure t
-  :custom
-  (default-input-method "rime")
-  (rime-show-candidate 'minibuffer)
-  :bind
-  )
+(unless (eq system-type 'darwin)
+  (use-package rime
+    :ensure t
+    :custom
+    (default-input-method "rime")
+    (rime-show-candidate 'minibuffer)
+    :bind
+    ))
 
 
 
@@ -102,26 +112,8 @@
  '(dired-dwim-target t)
  '(elpy-modules nil)
  '(elpy-rpc-python-command "python3")
- '(package-selected-packages
-   '(ace-jump-mode anzu auto-complete auto-complete-c-headers bazel
-		   claude-code clean-aindent-mode command-log-mode
-		   company company-anaconda company-lsp company-web
-		   company-web-html counsel counsel-projectile dash
-		   dtrt-indent ecb electric-spacing emmet-mode
-		   expand-region f flycheck fullframe function-args
-		   gnu-elpa-keyring-update google-this gptel helm
-		   helm-company helm-gtags hungry-delete hydra iedit
-		   inheritenv ivy ivy-dired-history jedi lsp-ui magit
-		   modus-themes multiple-cursors no-littering
-		   nyan-mode org-bullets ox-pandoc popup projectile
-		   pyim python-mode rainbow-delimiters rime
-		   smartparens smex swiper tango
-		   treemacs-all-the-icons undo-tree virtualenv
-		   virtualenvwrapper visual-fill-column vterm vue-mode
-		   w3m web-mode ws-butler yasnippet zenburn-theme
-		   zygospore))
- '(package-vc-selected-packages
-   '((claude-code :url "https://github.com/stevemolitor/claude-code.el")))
+ '(package-selected-packages nil)
+ '(package-vc-selected-packages 'nil)
  '(python-shell-completion-native-enable nil)
  '(warning-suppress-log-types '((comp) (comp)))
  '(warning-suppress-types '((comp))))

@@ -5,7 +5,7 @@
     :host "openrouter.ai"
     :endpoint "/api/v1/chat/completions"
     :stream t
-    :key "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"
+    :key (lambda () (getenv "OPENROUTER_API_KEY"))
     :models '(deepseek/deepseek-v3.2
               anthropic/claude-sonnet-4-6))
 
@@ -13,12 +13,12 @@
         gptel-model   'anthropic/claude-sonnet-4-6
         gptel-proxy   "http://127.0.0.1:7890")
 
-  (defvar my/clickhouse-host "10.20.128.181")
-  (defvar my/clickhouse-port "8123")
-  (defvar my/clickhouse-user "ai_reader")
-  (defvar my/clickhouse-password "fingfingha")
-  (defvar my/clickhouse-database "default")
-  (defvar my/workspace-dir "/mnt/lishiyu/AI/")
+  (defvar my/clickhouse-host (or (getenv "CLICKHOUSE_HOST") "10.20.128.181"))
+  (defvar my/clickhouse-port (or (getenv "CLICKHOUSE_PORT") "8123"))
+  (defvar my/clickhouse-user (or (getenv "CLICKHOUSE_USER") "ai_reader"))
+  (defvar my/clickhouse-password (or (getenv "CLICKHOUSE_PASSWORD") ""))
+  (defvar my/clickhouse-database (or (getenv "CLICKHOUSE_DATABASE") "default"))
+  (defvar my/workspace-dir "~/")
 
   (make-directory my/workspace-dir t)
   (advice-add 'gptel--openai-format-tool-id :override #'identity)

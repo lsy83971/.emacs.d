@@ -10,7 +10,7 @@
 
 (use-package claude-code
   :ensure nil
-  :vc (:url "https://github.com/stevemolitor/claude-code.el" :rev :newest)
+  ;;:vc (:url "https://github.com/stevemolitor/claude-code.el" :rev :newest)
   :bind-keymap
   ("C-c c" . claude-code-command-map)
   :config
