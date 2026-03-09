@@ -42,7 +42,6 @@
           "--header-insertion=never"
           "--completion-style=detailed"
           "--pch-storage=memory"
-          "--cross-file-rename"
           "--function-arg-placeholders=0"))
   (setq lsp-enable-snippet nil)
   (setq lsp-auto-guess-root t)
@@ -56,24 +55,13 @@
   (define-key lsp-mode-map (kbd "C-c l f") 'lsp-format-buffer)
   (define-key lsp-mode-map (kbd "C-c l i") 'lsp-organize-imports))
 
-;; Company 补全（C/C++ 模式下使用 lsp 作为主要后端）
-(use-package company
-  :hook ((c-mode . company-mode)
-         (c++-mode . company-mode))
-  :config
-  (setq company-idle-delay 0.3
-        company-minimum-prefix-length 2
-        company-selection-wrap-around t
-        company-show-numbers t
-        company-tooltip-limit 10
-        company-dabbrev-downcase nil))
-
-;; 确保 lsp 补全后端在 C/C++ 中优先
+;; C/C++ 模式的 company 补全设置（company 本身由 init-company.el 配置）
 (defun my/c-company-setup ()
   "设置 C/C++ 模式的 company backends。"
   (setq-local company-backends '(company-capf
                                  company-dabbrev-code
-                                 company-files)))
+                                 company-files))
+  (company-mode 1))
 
 (add-hook 'c++-mode-hook #'my/c-company-setup)
 (add-hook 'c-mode-hook #'my/c-company-setup)

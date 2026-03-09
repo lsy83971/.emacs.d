@@ -62,13 +62,14 @@
       (electric-spacing-mode)
       (setq-local electric-spacing-operators
 		  '(?= ?< ?> ?% ?+ ?- ?* ?/ ?& ?| ?: ?? ?, ?~ ?. ?^ ?\; ?!))
-      (elpy-enable)
       (setq-local company-backends '(elpy-company-backend
                                      company-capf
                                      company-dabbrev-code
                                      company-files))
       (company-mode 1)
       (rainbow-delimiters-mode))))
+  :config
+  (elpy-enable)
   :custom
   ((python-shell-prompt-regexp "In \\[[0-9]+\\]: ")
    (python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: "))
