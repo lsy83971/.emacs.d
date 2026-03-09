@@ -1,19 +1,13 @@
 (setq package-check-signature nil)
-;;(defun my/set-font ()
-;;  (interactive)
-;;  (set-face-attribute 'default nil
-;;                      :font "Sarasa Fixed SC"
-;;                      :height 120)
-;;  (setq-default line-spacing 0))
-;;(add-hook 'after-init-hook 'my/set-font)
-
 (setq inhibit-compacting-font-caches t)
-(add-hook 'after-init-hook
-          (lambda ()
-            (setq-default line-height nil)
-            (set-face-attribute 'default nil :font "Sarasa Fixed SC" :height 120)
-            ;; 固定行高为字体高度，不随内容变化
-            (setq x-stretch-cursor t)))
+(defun my/set-frame-font-setting (&optional frame)
+   (setq-default line-height nil)
+   (set-face-attribute 'default nil :font "Sarasa Fixed SC" :height 120)
+   ;; 固定行高为字体高度，不随内容变化
+   (setq x-stretch-cursor t)
+ )
+(add-hook 'server-after-make-frame-hook 'my/set-frame-font-setting)
+(add-hook 'after-init-hook 'my/set-frame-font-setting)
 
 ;;(setq debug-on-error t)
 ;;(setq debug-on-error nil)

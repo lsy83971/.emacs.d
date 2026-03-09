@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t; -*-
 ;; 1. 添加 MELPA（vterm 需要）
 (use-package inheritenv
   :ensure t)
@@ -7,31 +8,64 @@
 (require 'claude-code)
 (define-key global-map (kbd "C-c c") 'claude-code-command-map)
 
-;; (use-package claude-code
-;;   :ensure nil
-;;   :vc (:url "https://github.com/stevemolitor/claude-code.el" :rev :newest)
-;;   :config
-;;   (define-key global-map (kbd "C-c c") claude-code-command-map))
-
 (use-package claude-code
   :ensure nil
   :vc (:url "https://github.com/stevemolitor/claude-code.el" :rev :newest)
   :bind-keymap
   ("C-c c" . claude-code-command-map)
   :config
-  ;; 文件改动后自动同步 buffer（Claude 改完文件 Emacs 能立刻看到）
+  ;; 文件改动后自动同步 buffer
   (global-auto-revert-mode 1)
-  (setq auto-revert-use-notify nil)  ; 如果自动同步不稳定加这行
+  (setq auto-revert-use-notify nil)
   (setq claude-code-terminal-backend 'vterm)
 
-  ;; Claude 窗口固定在右侧
-  ;; 注意用 "^\\*claude:" 而非 "^\\*claude"，避免匹配到 *claude-input:...* 等輔助 buffer
-  (add-to-list 'display-buffer-alist
-               '("^\\*claude:"
-                 (display-buffer-in-side-window)
-                 (side . right)
-                 (slot . 0)
-                 (window-width . 120))))
+  ;; Claude 窗口佔據當前窗口（不創建額外窗口）
+  (setq claude-code-display-window-fn
+        (lambda (buffer)
+          (display-buffer buffer '(display-buffer-same-window))))
+
+  ;; 👇 啟動時移除 side window 屬性
+  (add-hook 'claude-code-start-hook
+            (lambda ()
+              (when (derived-mode-p 'vterm-mode)
+                (set-window-parameter nil 'window-side nil)
+                (set-window-parameter nil 'window-slot nil))))
+
+  ;; 標記 Claude buffer 是否正在初始化（需在 advice 之前定義）
+  (defvar claude-code--initializing nil
+    "標記 Claude buffer 是否正在初始化。")
+
+  ;; 攔截 pop-to-buffer 對 Claude buffer 的調用，一律改用 switch-to-buffer（佔據當前窗口）
+  ;; 同時設置 initializing 標記，防止 vterm 內部的 delete-window 關閉該窗口
+  (define-advice pop-to-buffer (:around (orig-fn buffer &rest args) claude-code-same-window)
+    "所有 Claude buffer 一律在當前窗口顯示，不創建額外窗口。"
+    (let* ((buf-name (if (bufferp buffer)
+                         (buffer-name buffer)
+                       (if (stringp buffer) buffer nil)))
+           (is-claude (and buf-name (string-match-p "^\\*claude:" buf-name))))
+      (if is-claude
+          (progn
+            ;; 設置初始化標記，讓 delete-window advice 攔截後續的刪除
+            (setq claude-code--initializing t)
+            (run-with-timer 0.5 nil (lambda () (setq claude-code--initializing nil)))
+            (switch-to-buffer buffer))
+        (apply orig-fn buffer args))))
+
+  ;; 阻止 delete-window 刪除 Claude buffer 的窗口（僅在初始化階段）
+
+  (define-advice delete-window (:around (orig-fn &optional window) claude-code-preserve-window)
+    "在 Claude 初始化階段阻止刪除 Claude buffer 的窗口。"
+    (let* ((win (or window (selected-window)))
+           (buf (window-buffer win))
+           (buf-name (buffer-name buf)))
+        (if (and claude-code--initializing
+               buf-name
+               (string-match-p "^\\*claude:" buf-name))
+          nil  ;; 阻止刪除
+        (funcall orig-fn window))))
+
+  ;; 👇 spinner 字符修正（確保這個 hook 存在）
+  )
 
 (require 'project)
 (add-to-list 'project-find-functions
@@ -40,14 +74,15 @@
                  (cons 'transient dir))))
 
 ;; 修复：切换 vterm-copy-mode 时阻止 Claude CLI 收到 resize 信号
-(define-advice display-buffer (:around (orig-fn buffer &rest args) claude-code-preserve-window)
-  "当 Claude buffer 已经在某个窗口显示时，不重新 display，保持窗口大小不变。"
-  (if (and (claude-code--buffer-p buffer)
-           (get-buffer-window buffer))
-      ;; 已经可见，直接返回现有窗口，不做任何操作
-      (get-buffer-window buffer)
-    ;; 否则正常 display
-    (apply orig-fn buffer args)))
+;; 注释掉这个 advice，因为它会干扰 display-buffer-same-window 的行为
+;; (define-advice display-buffer (:around (orig-fn buffer &rest args) claude-code-preserve-window)
+;;   "当 Claude buffer 已经在某个窗口显示时，不重新 display，保持窗口大小不变。"
+;;   (if (and (claude-code--buffer-p buffer)
+;;            (get-buffer-window buffer))
+;;       ;; 已经可见，直接返回现有窗口，不做任何操作
+;;       (get-buffer-window buffer)
+;;     ;; 否则正常 display
+;;     (apply orig-fn buffer args)))
 
 ;;(advice-add 'claude-code-toggle-read-only-mode :override #'claude-code-toggle-read-only-mode-fixed)
 
@@ -224,6 +259,11 @@
 (defvar claude-code-input-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-<return>") #'claude-code-input-send)
+    (define-key map (kbd "C-r") 
+      (lambda () (interactive)
+        (when-let ((claude-buf (and claude-code-input--target 
+                                    (get-buffer claude-code-input--target))))
+          (with-current-buffer claude-buf (vterm-send-return)))))    
     (define-key map (kbd "C-<up>")     #'claude-code-input-history-prev)
     (define-key map (kbd "C-<down>")   #'claude-code-input-history-next)
     map)
@@ -260,16 +300,19 @@ C-RET 發送，C-up/C-down 瀏覽歷史，RET 換行（支援多行）。"
                   (and claude-buf (buffer-name claude-buf))))
     (if-let ((win (get-buffer-window input-buf)))
         (select-window win)
-      ;; 用 side-window slot 1（在 Claude 下方）顯示
-      (let ((win (display-buffer input-buf
-                                 `((display-buffer-in-side-window)
-                                   (side . right)
-                                   (slot . 1)
-                                   (window-height . ,claude-code-input-window-height)))))
+      (let* ((claude-win (and claude-buf (get-buffer-window claude-buf t)))
+             (win (if claude-win
+                      (with-selected-window claude-win
+                        (display-buffer input-buf
+                                        `((display-buffer-reuse-window display-buffer-below-selected)
+                                          (window-height . ,claude-code-input-window-height))))
+                    (display-buffer input-buf
+                                    `((display-buffer-pop-up-window)
+                                      (window-height . ,claude-code-input-window-height))))))
         (when win (select-window win))))))
 
 (defun claude-code--auto-open-input ()
-  "Claude 啟動時自動在右側下方（slot 1）開啟輸入框。"
+  "Claude 啟動時自動在其下方開啟輸入框。"
   (let ((claude-buf (current-buffer)))
     (run-with-timer
      0.3 nil
@@ -281,13 +324,18 @@ C-RET 發送，C-up/C-down 瀏覽歷史，RET 換行（支援多行）。"
              (unless claude-code-input-mode
                (claude-code-input-mode 1))
              (setq-local claude-code-input--target (buffer-name claude-buf)))
+           
            (unless (get-buffer-window input-buf t)
-             (display-buffer input-buf
-                             `((display-buffer-in-side-window)
-                               (side . right)
-                               (slot . 1)
-                               (window-height . ,claude-code-input-window-height))))))))))
-
+             (let ((claude-win (get-buffer-window claude-buf t)))
+               (if claude-win
+                   (with-selected-window claude-win
+                     (display-buffer input-buf
+                                     `(display-buffer-below-selected
+                                       (window-height . ,claude-code-input-window-height)
+                                       (preserve-size . (nil . t)))))  ;; 👈 這裡加了兩個右括號
+                 (display-buffer input-buf
+                                 `(display-buffer-pop-up-window
+                                   (window-height . ,claude-code-input-window-height))))))))))))
 (add-hook 'claude-code-start-hook #'claude-code--auto-open-input)
 
 (with-eval-after-load 'claude-code
@@ -296,14 +344,24 @@ C-RET 發送，C-up/C-down 瀏覽歷史，RET 換行（支援多行）。"
 ;; ✢ (U+2722) 不在 Sarasa Fixed SC 中，fallback 為 Droid Sans Fallback（行高差 ~11%）
 ;; 在 Claude buffer 裡用 buffer-display-table 將其替換顯示為 ✽ (U+273D，Sarasa 有）
 (defun claude-code--fix-spinner-char ()
-  "在 Claude buffer 中替換行高不一致的 spinner 字元（均 fallback 到 Droid Sans Fallback）。
-✢ (U+2722) → ✽ (U+273D)
-✻ (U+273B) → ✽ (U+273D)"
-  (let ((table (make-display-table)))
-    (aset table ?✢ (vector (make-glyph-code ?✽)))
-    (aset table ?✻ (vector (make-glyph-code ?✽)))
-    (setq buffer-display-table table)))
-
+  "在 Claude buffer 中將所有特殊 spinner 字符替換為普通星號。
+處理的字符：✢ (U+2722), ✻ (U+273B), ✽ (U+273D)"
+  (let ((buf (current-buffer)))
+    (run-with-timer
+     0.5 nil
+     `(lambda ()
+        (when (buffer-live-p ,buf)
+          (with-current-buffer ,buf
+            (let ((table (or buffer-display-table (make-display-table))))
+              ;; 處理所有三個 spinner 字符
+              (aset table ?✢ (vector ?*))  ;; 四瓣淚滴星 → *
+              (aset table ?✻ (vector ?*))  ;; 淚滴星 → *
+              (aset table ?✽ (vector ?*))  ;; 粗淚滴星 → *
+              (setq buffer-display-table table)
+              ;; 同時直接替換 buffer 內容
+              (save-excursion
+                (goto-char (point-min))
+                (while (re-search-forward "[✢✻✽]" nil t)
+                  (replace-match "*" nil nil))))))))))
 (add-hook 'claude-code-start-hook #'claude-code--fix-spinner-char)
-
 (provide 'init-claude)
