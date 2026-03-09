@@ -73,7 +73,8 @@
 
 
 (use-package hydra
-  :bind (("C-c c" . hydra-text-scale/body))
+  ;; C-c c 已被 claude-code-command-map 占用
+  ;; :bind (("C-c c" . hydra-text-scale/body))
   :config
   (defhydra hydra-text-scale (:timeout 4)
   "scale text"

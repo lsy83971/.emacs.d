@@ -3,11 +3,6 @@
 (global-set-key (kbd "C-j") 'mc/edit-lines)
 (global-set-key (kbd "C-3") 'toggle-input-method)
 
-(defun my-backward-delete-word ()
-  "向后删除单词，不保存到 kill ring。"
-  (interactive)
-  (delete-region (point) (progn (backward-word) (point))))
-;;(global-set-key (kbd "M-DEL") 'my-backward-delete-word)
-(global-set-key (kbd "M-<backspace>") 'my-backward-delete-word)
+;; backward-delete-word 统一在 init-nav.el 中定义
 
 (provide 'init-keymap)
