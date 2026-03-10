@@ -24,11 +24,12 @@
 
 ;; need install rime-dev fcitx...
 (unless (eq system-type 'darwin)
+  (use-package popup :ensure t)
   (use-package rime
     :ensure t
     :custom
     (default-input-method "rime")
-    (rime-show-candidate 'minibuffer)
+    (rime-show-candidate 'popup)
     :bind
     ))
 
@@ -59,6 +60,12 @@
   (require 'init-cygwin)
   )
 
+;; 启动后空闲 3 秒，后台异步 pull 最新配置
+;; (run-with-idle-timer 3 nil
+;;   (lambda ()
+;;     (let ((default-directory user-emacs-directory))
+;;       (start-process "emacs-config-git-pull" nil "git" "pull" "--rebase"))))
+
 ;;(add-to-list 'load-path "~/.emacs.d/custom")
 
 ;;(use-package zenburn-theme
@@ -82,7 +89,6 @@
     (treemacs-load-theme "all-the-icons")))
 
 (load-theme 'tango)
-
 (add-hook 'kill-emacs-hook
           (lambda ()
             ;; 1. 先关输入法
@@ -96,6 +102,13 @@
                         (format "%s" (timer--function timer)))
                   (cancel-timer timer)))))
           -101)
+
+;; 以后更新词库，只需
+;; cd /tmp/rime-ice && git pull
+;; cp *.yaml /root/.emacs.d/rime/
+;; cp -r cn_dicts en_dicts opencc lua /root/.emacs.d/rime/
+;; # 然后 M-x rime-deploy                                                                                                
+
 ;;(add-hook 'kill-emacs-query-functions
 ;;          (lambda ()
 ;;            (when current-input-method
