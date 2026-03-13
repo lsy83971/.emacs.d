@@ -11,9 +11,11 @@ var/
 projectile-bookmarks.eld
 recentf
 semanticdb/
+claude-code-stevemolitor/
 auto-save-list/
 transient/
 *.~undo-tree~
 **.~undo-tree~
 *.el~
 **.el~
+.#*

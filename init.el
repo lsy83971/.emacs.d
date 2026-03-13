@@ -20,7 +20,7 @@
 
 ;;(setq debug-on-error t)
 ;;(setq debug-on-error nil)
-
+(defvar kinsoku-limit nil)
 
 ;; need install rime-dev fcitx...
 (unless (eq system-type 'darwin)
@@ -33,7 +33,7 @@
     :bind
     ))
 
-
+;;(setq rime-show-candidate 'minibuffer)
 
 
 ;;
@@ -52,6 +52,11 @@
 (require 'init-local)
 (require 'init-gpt)
 (require 'init-claude)
+
+;; ansi-term char mode 下直接使用 Emacs 复制粘贴
+(with-eval-after-load 'term
+  (define-key term-raw-map (kbd "C-y") 'term-paste)
+  (define-key term-raw-map (kbd "M-w") 'kill-ring-save))
 (require 'init-python)
 (require 'init-rgrep)
 (require 'init-c)
