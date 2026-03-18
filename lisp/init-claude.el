@@ -19,6 +19,14 @@
   (setq auto-revert-use-notify nil)
   (setq claude-code-terminal-backend 'vterm)
 
+  ;; 把当前 Emacs 的 server-name 传给 Claude Code，
+  ;; 让 MCP server 知道该连哪个 daemon
+  (add-hook 'claude-code-process-environment-functions
+            (lambda (_buffer-name _dir)
+              (unless (bound-and-true-p server-process)
+                (server-start))
+              (list (format "EMACS_SOCKET_NAME=%s" server-name))))
+
   ;; Claude 窗口佔據當前窗口（不創建額外窗口）
   (setq claude-code-display-window-fn
         (lambda (buffer)
@@ -103,13 +111,26 @@
   "M-w：未在 copy 模式時進入；已在 copy 模式時複製選取區並退出。"
   (interactive)
   (if (bound-and-true-p vterm-copy-mode)
-      (progn
+      (let ((win-start (window-start))
+            (saved-point (point)))
         (when (use-region-p)
-          (kill-ring-save (region-beginning) (region-end))
+          (let* ((raw (buffer-substring (region-beginning) (region-end)))
+                 (cleaned (vterm--filter-buffer-substring raw)))
+            (kill-new cleaned)
+            (deactivate-mark))
           (message "已複製到 kill-ring"))
         (vterm-copy-mode -1)
-        (setq-local cursor-type nil))
-    (claude-code--term-read-only-mode claude-code-terminal-backend)
+        (setq-local cursor-type nil)
+        ;; vterm--exit-copy-mode 会调 vterm-reset-cursor-point 把 point 跳到末尾
+        ;; 必须同时恢复 point 和 window-start，否则 redisplay 会跟随 point 滚动
+        (goto-char (min saved-point (point-max)))
+        (set-window-start nil (min win-start (point-max)) t))
+    ;; 保存當前視野位置，進入 copy 模式後恢復
+    (let ((win-start (window-start))
+          (win-point (window-point)))
+      (claude-code--term-read-only-mode claude-code-terminal-backend)
+      (set-window-start nil win-start t)
+      (goto-char (max win-point win-start)))
     (message "Copy 模式：C-SPC 設標記，移動選取，再按 M-w 複製並退出")))
 
 (defun claude-code-paste ()
@@ -338,6 +359,18 @@ C-RET 發送，C-up/C-down 瀏覽歷史，RET 換行（支援多行）。"
                                    (window-height . ,claude-code-input-window-height))))))))))))
 (add-hook 'claude-code-start-hook #'claude-code--auto-open-input)
 
+(defun claude-code--auto-kill-input ()
+  "Claude buffer 关闭时自动关闭对应的 input buffer。"
+  (let ((input-buf (get-buffer (format "*claude-input:%s*" (buffer-name)))))
+    (when (buffer-live-p input-buf)
+      (let ((win (get-buffer-window input-buf t)))
+        (when win (delete-window win)))
+      (kill-buffer input-buf))))
+
+(add-hook 'claude-code-start-hook
+          (lambda ()
+            (add-hook 'kill-buffer-hook #'claude-code--auto-kill-input nil t)))
+
 (with-eval-after-load 'claude-code
   (define-key claude-code-command-map (kbd "i") #'claude-code-open-input))
 
@@ -364,4 +397,123 @@ C-RET 發送，C-up/C-down 瀏覽歷史，RET 換行（支援多行）。"
                 (while (re-search-forward "[✢✻✽]" nil t)
                   (replace-match "*" nil nil))))))))))
 (add-hook 'claude-code-start-hook #'claude-code--fix-spinner-char)
+(require 'claude-code-manager)
+(with-eval-after-load 'claude-code
+  (define-key claude-code-command-map (kbd "L") #'claude-code-manager))
+
+;;;; ============================================================
+;;;; Claude 实例间通信（Inter-Instance Communication）
+;;;; ============================================================
+;;
+;;   允许 Claude Code 实例 A 通过 emacsclient 向实例 B 发送消息。
+;;
+;;   用法（在 Claude Code 的 shell 中）：
+;;
+;;   # 列出所有可用的 Claude 实例
+;;   emacsclient --eval '(claude-code-ipc-list)'
+;;
+;;   # 向指定实例发送消息
+;;   emacsclient --eval '(claude-code-ipc-send "*claude:~/.emacs.d*" "请帮我检查 init.el")'
+;;
+;;   # 通过关键词模糊匹配实例名发送消息
+;;   emacsclient --eval '(claude-code-ipc-send "emacs" "请帮我检查 init.el")'
+
+(defun claude-code-ipc-list ()
+  "返回所有 Claude Code 实例的 alist：((buffer-name . 角色名) ...)。
+角色名即 instance name。可通过 emacsclient --eval 调用。"
+  (mapcar (lambda (b)
+            (cons (buffer-name b)
+                  (claude-code--get-character-id b)))
+          (claude-code--find-all-claude-buffers)))
+
+(defun claude-code-ipc--find-buffer (target)
+  "根据 TARGET 查找 Claude buffer。
+TARGET 可以是精确 buffer 名、角色名（instance name）、或模糊关键词。"
+  (or (get-buffer target)
+      ;; 角色名（instance name）精确匹配
+      (let ((bufs (claude-code--find-all-claude-buffers)))
+        (cl-find-if (lambda (b)
+                      (let ((cid (claude-code--get-character-id b)))
+                        (and cid (string= cid target))))
+                    bufs))
+      ;; 模糊 buffer 名子串匹配
+      (let ((bufs (claude-code--find-all-claude-buffers)))
+        (cl-find-if (lambda (b)
+                      (string-match-p (regexp-quote target) (buffer-name b)))
+                    bufs))))
+
+(defun claude-code-ipc-send (target message)
+  "向 TARGET 指定的 Claude 实例发送 MESSAGE。
+TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
+也可以是模糊关键词（如 \"emacs\"）。
+返回发送结果描述字符串。
+
+用法示例：
+  emacsclient --eval \\='(claude-code-ipc-send \"emacs\" \"你好\")\\='"
+  (let ((buf (claude-code-ipc--find-buffer target)))
+    (cond
+     ((not buf)
+      (format "ERROR: 找不到匹配 \"%s\" 的 Claude 实例。可用实例: %s"
+              target (claude-code-ipc-list)))
+     ((not (buffer-live-p buf))
+      (format "ERROR: buffer \"%s\" 已失效" target))
+     (t
+      (with-current-buffer buf
+        (when (bound-and-true-p vterm-copy-mode)
+          (vterm-copy-mode -1)
+          (setq-local cursor-type nil))
+        (vterm-send-string message t)
+        (let ((b buf))
+          (run-with-timer 0.1 nil
+                          (lambda ()
+                            (when (buffer-live-p b)
+                              (with-current-buffer b
+                                (vterm-send-return)))))))
+      (format "OK: 已发送至 %s" (buffer-name buf))))))
+
+;;;; ============================================================
+;;;; Character ID 系统（复用 instance name）
+;;;; ============================================================
+;;
+;;   每个 Claude 实例启动时必须输入角色名，作为 instance name。
+;;   Buffer 格式：*claude:~/dir:角色名*
+;;   角色名 = instance name = character_id，三者合一。
+
+;; 强制每次启动都提示输入 instance name（角色名）
+(advice-add 'claude-code--prompt-for-instance-name :around
+            (lambda (orig-fn dir existing-instance-names &optional force-prompt)
+              (funcall orig-fn dir existing-instance-names t)))
+
+(defun claude-code--get-character-id (buf)
+  "获取 BUF 的角色名（即 instance name）。"
+  (claude-code--extract-instance-name-from-buffer-name (buffer-name buf)))
+
+(defun claude-code-rename-character-id ()
+  "修改当前或选定 Claude 实例的角色名（instance name）。"
+  (interactive)
+  (let* ((buf (if (claude-code--buffer-p (current-buffer))
+                  (current-buffer)
+                (claude-code--get-or-prompt-for-buffer)))
+         (old-name (buffer-name buf))
+         (old-id (claude-code--get-character-id buf))
+         (dir (claude-code--extract-directory-from-buffer-name old-name))
+         (new-id (read-string "新角色名: " old-id))
+         (new-name (if (string-empty-p new-id)
+                       (format "*claude:%s*" dir)
+                     (format "*claude:%s:%s*" dir new-id)))
+         (old-input-name (format "*claude-input:%s*" old-name))
+         (input-buf (get-buffer old-input-name)))
+    (unless (string= old-name new-name)
+      (with-current-buffer buf
+        (rename-buffer new-name t))
+      ;; 同步更新 input buffer
+      (when (buffer-live-p input-buf)
+        (let ((new-input-name (format "*claude-input:%s*" (buffer-name buf))))
+          (with-current-buffer input-buf
+            (setq-local claude-code-input--target (buffer-name buf))
+            (rename-buffer new-input-name t)))))))
+
+(with-eval-after-load 'claude-code
+  (define-key claude-code-command-map (kbd "r") #'claude-code-rename-character-id))
+
 (provide 'init-claude)

@@ -52,6 +52,7 @@
 (require 'init-local)
 (require 'init-gpt)
 (require 'init-claude)
+(require 'window-layout)
 
 ;; ansi-term char mode 下直接使用 Emacs 复制粘贴
 (with-eval-after-load 'term
