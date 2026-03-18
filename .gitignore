@@ -18,4 +18,6 @@ transient/
 **.~undo-tree~
 *.el~
 **.el~
+*.elc~
+**.elc~
 .#*

@@ -1,5 +1,11 @@
-(use-package ace-jump-mode)
-(global-set-key (kbd "C-2" ) 'ace-jump-mode)
+(use-package avy
+  :bind (("C-2" . avy-goto-char-timer)
+         ("M-g l" . avy-goto-line)
+         ("M-g w" . avy-goto-word-1)
+         ("C-c y" . avy-copy-line)
+         ("C-c m" . avy-move-line)
+         ("C-c k" . avy-kill-whole-line)))
+
 
 (use-package multiple-cursors
   :bind

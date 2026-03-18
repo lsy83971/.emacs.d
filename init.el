@@ -52,6 +52,7 @@
 (require 'init-local)
 (require 'init-gpt)
 (require 'init-claude)
+(require 'init-minimax)
 (require 'window-layout)
 
 ;; ansi-term char mode 下直接使用 Emacs 复制粘贴
@@ -131,7 +132,21 @@
  '(dired-dwim-target t)
  '(elpy-modules nil)
  '(elpy-rpc-python-command "python3")
- '(package-selected-packages nil)
+ '(package-selected-packages
+   '(avy anzu bazel bind-key
+		   chatgpt-shell claude-code command-log-mode
+		   company-anaconda company-box company-web
+		   dash-functional doom-modeline electric-spacing elpy
+		   emmet-mode epc expand-region flycheck fullframe
+		   git-commit gnu-elpa-keyring-update google-this
+		   gptel helpful hungry-delete ivy-dired-history
+		   lsp-ui magit modus-themes multiple-cursors
+		   no-littering nyan-mode org-bullets ox-pandoc
+		   pkg-info projectile pyim python-environment
+		   python-mode rainbow-delimiters rime smartparens
+		   smex treemacs-all-the-icons undo-tree virtualenv
+		   virtualenvwrapper visual-fill-column vterm vue-mode
+		   w3m which-key xterm-color zenburn-theme zygospore))
  '(package-vc-selected-packages 'nil)
  '(python-shell-completion-native-enable nil)
  '(warning-suppress-log-types '((comp) (comp)))

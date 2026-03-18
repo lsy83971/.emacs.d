@@ -46,18 +46,25 @@
   ;; 攔截 pop-to-buffer 對 Claude buffer 的調用，一律改用 switch-to-buffer（佔據當前窗口）
   ;; 同時設置 initializing 標記，防止 vterm 內部的 delete-window 關閉該窗口
   (define-advice pop-to-buffer (:around (orig-fn buffer &rest args) claude-code-same-window)
-    "所有 Claude buffer 一律在當前窗口顯示，不創建額外窗口。"
+    "所有 Claude buffer 一律在當前窗口顯示，不創建額外窗口。
+批量靜默創建（`claude-group--pending-suppress' 非 nil）時走原始
+`pop-to-buffer'，避免搶佔當前窗口。"
     (let* ((buf-name (if (bufferp buffer)
                          (buffer-name buffer)
                        (if (stringp buffer) buffer nil)))
            (is-claude (and buf-name (string-match-p "^\\*claude:" buf-name))))
-      (if is-claude
-          (progn
-            ;; 設置初始化標記，讓 delete-window advice 攔截後續的刪除
-            (setq claude-code--initializing t)
-            (run-with-timer 0.5 nil (lambda () (setq claude-code--initializing nil)))
-            (switch-to-buffer buffer))
-        (apply orig-fn buffer args))))
+      (if (not is-claude)
+          (apply orig-fn buffer args)
+        (if (bound-and-true-p claude-group--pending-suppress)
+            ;; 靜默模式：走原始 pop-to-buffer，讓 vterm 量窗口寬度，
+            ;; 之後 delete-window 會關掉臨時窗口
+            (progn
+              (setq claude-code--initializing nil)
+              (apply orig-fn buffer args))
+          ;; 正常模式：佔據當前窗口
+          (setq claude-code--initializing t)
+          (run-with-timer 0.5 nil (lambda () (setq claude-code--initializing nil)))
+          (switch-to-buffer buffer)))))
 
   ;; 阻止 delete-window 刪除 Claude buffer 的窗口（僅在初始化階段）
 
@@ -302,15 +309,18 @@ C-RET 發送，C-up/C-down 瀏覽歷史，RET 換行（支援多行）。"
                         "    C-RET 發送  C-↑ 上一筆  C-↓ 下一筆"))
     (setq-local header-line-format nil)))
 
+(defun claude-code--input-buffer-name (claude-buf)
+  "根据 CLAUDE-BUF 生成对应的 input buffer 名称。
+格式：*input:<角色名>*，无角色名时用 buffer 名。"
+  (let ((cid (and claude-buf (claude-code--get-character-id claude-buf))))
+    (format "*input:%s*" (or cid (if claude-buf (buffer-name claude-buf) "?")))))
+
 (defun claude-code-open-input ()
   "開啟對應當前 Claude instance 的獨立輸入框。
 若視窗已存在則直接跳至該視窗。"
   (interactive)
   (let* ((claude-buf  (claude-code--get-or-prompt-for-buffer))
-         (input-name  (format "*claude-input%s*"
-                              (if claude-buf
-                                  (concat ":" (buffer-name claude-buf))
-                                "")))
+         (input-name  (claude-code--input-buffer-name claude-buf))
          (input-buf   (get-buffer-create input-name))
          (is-new      (not (buffer-local-value 'claude-code-input-mode input-buf))))
     (with-current-buffer input-buf
@@ -333,27 +343,32 @@ C-RET 發送，C-up/C-down 瀏覽歷史，RET 換行（支援多行）。"
         (when win (select-window win))))))
 
 (defun claude-code--auto-open-input ()
-  "Claude 啟動時自動在其下方開啟輸入框。"
-  (let ((claude-buf (current-buffer)))
+  "Claude 啟動時自動在其下方開啟輸入框。
+
+若 Claude buffer 有 buffer-local 變量 `claude-group--no-display' 為非 nil，
+只創建 input buffer 但不彈出窗口。"
+  (let* ((claude-buf (current-buffer))
+         (suppress (and (local-variable-p 'claude-group--no-display claude-buf)
+                        (buffer-local-value 'claude-group--no-display claude-buf))))
     (run-with-timer
      0.3 nil
      (lambda ()
        (when (buffer-live-p claude-buf)
-         (let* ((input-name (format "*claude-input:%s*" (buffer-name claude-buf)))
+         (let* ((input-name (claude-code--input-buffer-name claude-buf))
                 (input-buf  (get-buffer-create input-name)))
            (with-current-buffer input-buf
              (unless claude-code-input-mode
                (claude-code-input-mode 1))
              (setq-local claude-code-input--target (buffer-name claude-buf)))
-           
-           (unless (get-buffer-window input-buf t)
+           ;; suppress 时只创建 buffer，不弹窗
+           (unless (or suppress (get-buffer-window input-buf t))
              (let ((claude-win (get-buffer-window claude-buf t)))
                (if claude-win
                    (with-selected-window claude-win
                      (display-buffer input-buf
                                      `(display-buffer-below-selected
                                        (window-height . ,claude-code-input-window-height)
-                                       (preserve-size . (nil . t)))))  ;; 👈 這裡加了兩個右括號
+                                       (preserve-size . (nil . t)))))
                  (display-buffer input-buf
                                  `(display-buffer-pop-up-window
                                    (window-height . ,claude-code-input-window-height))))))))))))
@@ -361,7 +376,7 @@ C-RET 發送，C-up/C-down 瀏覽歷史，RET 換行（支援多行）。"
 
 (defun claude-code--auto-kill-input ()
   "Claude buffer 关闭时自动关闭对应的 input buffer。"
-  (let ((input-buf (get-buffer (format "*claude-input:%s*" (buffer-name)))))
+  (let ((input-buf (get-buffer (claude-code--input-buffer-name (current-buffer)))))
     (when (buffer-live-p input-buf)
       (let ((win (get-buffer-window input-buf t)))
         (when win (delete-window win)))
@@ -480,9 +495,12 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
 ;;   角色名 = instance name = character_id，三者合一。
 
 ;; 强制每次启动都提示输入 instance name（角色名）
+(defun claude-code--force-prompt-instance-name (orig-fn dir existing-instance-names &optional _force-prompt)
+  "始终强制提示输入 instance name。"
+  (funcall orig-fn dir existing-instance-names t))
+
 (advice-add 'claude-code--prompt-for-instance-name :around
-            (lambda (orig-fn dir existing-instance-names &optional force-prompt)
-              (funcall orig-fn dir existing-instance-names t)))
+            #'claude-code--force-prompt-instance-name)
 
 (defun claude-code--get-character-id (buf)
   "获取 BUF 的角色名（即 instance name）。"
@@ -501,19 +519,21 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
          (new-name (if (string-empty-p new-id)
                        (format "*claude:%s*" dir)
                      (format "*claude:%s:%s*" dir new-id)))
-         (old-input-name (format "*claude-input:%s*" old-name))
+         (old-input-name (claude-code--input-buffer-name buf))
          (input-buf (get-buffer old-input-name)))
     (unless (string= old-name new-name)
       (with-current-buffer buf
         (rename-buffer new-name t))
       ;; 同步更新 input buffer
       (when (buffer-live-p input-buf)
-        (let ((new-input-name (format "*claude-input:%s*" (buffer-name buf))))
+        (let ((new-input-name (claude-code--input-buffer-name buf)))
           (with-current-buffer input-buf
             (setq-local claude-code-input--target (buffer-name buf))
             (rename-buffer new-input-name t)))))))
 
 (with-eval-after-load 'claude-code
   (define-key claude-code-command-map (kbd "r") #'claude-code-rename-character-id))
+
+(require 'init-claude-group)
 
 (provide 'init-claude)
