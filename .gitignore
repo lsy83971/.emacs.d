@@ -14,10 +14,14 @@ semanticdb/
 claude-code-stevemolitor/
 auto-save-list/
 transient/
+undo-tree-history/
 *.~undo-tree~
 **.~undo-tree~
 *.el~
 **.el~
 *.elc~
 **.elc~
+*.elc
+**.elc
+CLAUDE.md
 .#*

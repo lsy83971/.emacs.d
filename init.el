@@ -163,5 +163,8 @@
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
 
+;; undo-tree: 集中存放历史文件，不污染项目目录
+(setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo-tree-history/")))
+
 
 

@@ -97,6 +97,54 @@
             '((name . claude-group-override) (depth . 100)))
 
 ;;; ============================================================
+;;; 动态 MCP 配置：让每个 Claude 实例连接到正确的 Emacs server
+;;; ============================================================
+
+(defun claude-group--emacs-server-name ()
+  "返回当前 Emacs 的 server socket 名称。"
+  (if (bound-and-true-p server-name)
+      server-name
+    "server"))
+
+(defun claude-group--mcp-config-for-server (socket-name)
+  "为 SOCKET-NAME 生成 MCP 配置 JSON 文件路径，不存在则创建。
+返回 JSON 文件的路径。文件缓存在 /tmp/ 下，同名 server 复用。"
+  (let ((config-file (expand-file-name
+                      (format "claude-mcp-emacs-%s.json" socket-name)
+                      temporary-file-directory)))
+    ;; 每次都重新写入，确保内容最新
+    (with-temp-file config-file
+      (insert (json-encode
+               `(("mcpServers"
+                  . (("emacs-eval"
+                      . (("type" . "stdio")
+                         ("command" . "python3")
+                         ("args" . ["/root/.emacs.d/mcp/emacs-eval-server.py"])
+                         ("env" . (("EMACS_SOCKET_NAME" . ,socket-name)))))))))))
+    config-file))
+
+(defun claude-group--auto-mcp-switches ()
+  "返回 --mcp-config 参数列表，指向当前 Emacs server 的 MCP 配置。"
+  (let* ((socket (claude-group--emacs-server-name))
+         (config-file (claude-group--mcp-config-for-server socket)))
+    (list "--mcp-config" config-file)))
+
+;;; ============================================================
+;;; 为所有 Claude 实例自动注入正确的 MCP 配置
+;;; ============================================================
+
+(defun claude-group--inject-mcp-config (orig-fn arg extra-switches &optional force-prompt force-switch-to-buffer)
+  "Advice：在 claude-code--start 的 extra-switches 中自动注入 --mcp-config。
+确保每个 Claude 实例连接到启动它的那个 Emacs server。"
+  (let ((mcp-switches (claude-group--auto-mcp-switches)))
+    (funcall orig-fn arg
+             (append (or extra-switches nil) mcp-switches)
+             force-prompt force-switch-to-buffer)))
+
+(with-eval-after-load 'claude-code
+  (advice-add 'claude-code--start :around #'claude-group--inject-mcp-config))
+
+;;; ============================================================
 ;;; 构建 CLI 参数
 ;;; ============================================================
 
