@@ -534,6 +534,168 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
 (with-eval-after-load 'claude-code
   (define-key claude-code-command-map (kbd "r") #'claude-code-rename-character-id))
 
+;;;; ============================================================
+;;;; Heartbeat Timer（防空闲提醒）
+;;;; ============================================================
+;;
+;;   监控 Claude buffer，若检测到空闲则自动发送提醒。
+;;   M-x claude-code-toggle-heartbeat  或  C-c c h  启停。
+
+(defcustom claude-code-heartbeat-interval 120
+  "Heartbeat 默认间隔（秒）。
+`C-u C-c c h' 可临时指定间隔，否则使用此值。"
+  :type 'integer
+  :group 'claude-code)
+
+(defvar claude-code--heartbeat-timers nil
+  "Heartbeat timer alist: ((buffer . timer) ...)。")
+
+(defvar-local claude-code--heartbeat-last-size nil
+  "上次 tick 时 buffer 的 point-max 值。")
+
+(defvar-local claude-code--heartbeat-idle-count 0
+  "连续未变化的 tick 次数。需连续 2 次无变化才判定空闲。")
+
+(defvar-local claude-code--heartbeat-interval-secs nil
+  "当前 buffer 的 heartbeat 间隔（秒），用于 modeline 显示。")
+
+(defun claude-code--heartbeat-tick (buf)
+  "Heartbeat tick：检查 BUF 是否空闲，空闲则发送提醒。
+用 buffer size (point-max) 判断变化——vterm 有内容输出时 point-max 必然变化，
+而光标闪烁、spinner 不影响 point-max。连续 2 次 tick 无变化才判定空闲。"
+  (condition-case err
+      (if (not (buffer-live-p buf))
+          (claude-code--heartbeat-stop buf)
+        (with-current-buffer buf
+          (let* ((cur-size (point-max))
+                 (last-size (or claude-code--heartbeat-last-size 0))
+                 (changed (/= cur-size last-size)))
+            (setq claude-code--heartbeat-last-size cur-size)
+            (if changed
+                (setq claude-code--heartbeat-idle-count 0)
+              (setq claude-code--heartbeat-idle-count
+                    (1+ claude-code--heartbeat-idle-count))
+              (when (>= claude-code--heartbeat-idle-count 2)
+                (ignore-errors
+                  (append-to-file
+                   (format "[%s] >>> 触发提醒(idle=%d): %s\n"
+                           (format-time-string "%H:%M:%S")
+                           claude-code--heartbeat-idle-count
+                           (buffer-name buf))
+                   nil "/tmp/heartbeat-debug.log"))
+                (condition-case send-err
+                    (progn
+                      (claude-code-ipc-send
+                       (buffer-name buf)
+                       "[系统提醒] 请继续推进工作。")
+                      (message "[heartbeat] 已提醒: %s" (buffer-name buf)))
+                  (error
+                   (ignore-errors
+                     (append-to-file
+                      (format "[%s] !!! 提醒失败: %s\n"
+                              (format-time-string "%H:%M:%S")
+                              (error-message-string send-err))
+                      nil "/tmp/heartbeat-debug.log"))))
+                (setq claude-code--heartbeat-idle-count 0))))))
+    (error
+     (ignore-errors
+       (append-to-file
+        (format "[%s] !!! tick 异常: %s\n"
+                (format-time-string "%H:%M:%S")
+                (error-message-string err))
+        nil "/tmp/heartbeat-debug.log")))))
+
+(defun claude-code--heartbeat-stop (buf)
+  "停止 BUF 的 heartbeat timer 并从 alist 中移除，清理 modeline。"
+  (let ((entry (assq buf claude-code--heartbeat-timers)))
+    (when entry
+      (cancel-timer (cdr entry))
+      (setq claude-code--heartbeat-timers
+            (delq entry claude-code--heartbeat-timers))
+      (when (buffer-live-p buf)
+        (with-current-buffer buf
+          (setq claude-code--heartbeat-interval-secs nil))
+        ;; 同步清理 input buffer 的 modeline
+        (let ((input-buf (get-buffer (claude-code--input-buffer-name buf))))
+          (when (buffer-live-p input-buf)
+            (with-current-buffer input-buf
+              (setq claude-code--heartbeat-interval-secs nil))))))))
+
+(defun claude-code--heartbeat-modeline ()
+  "返回 heartbeat modeline 标识字符串。"
+  (if claude-code--heartbeat-interval-secs
+      (propertize (format "♥%dm " (/ claude-code--heartbeat-interval-secs 60))
+                  'face '(:foreground "#e74c3c"))
+    ""))
+
+(defun claude-code--heartbeat-get-claude-buffer ()
+  "获取当前关联的 Claude buffer。
+支持在 Claude buffer 或其 input buffer 中调用。"
+  (cond
+   ((claude-code--buffer-p (current-buffer))
+    (current-buffer))
+   ((bound-and-true-p claude-code-input--target)
+    (get-buffer claude-code-input--target))
+   (t nil)))
+
+(defun claude-code-toggle-heartbeat ()
+  "切换当前 Claude buffer 的 heartbeat 监控。
+在 Claude buffer 或其 input buffer 中执行。
+启用时提示输入间隔分钟数（默认 2）。"
+  (interactive)
+  (let ((buf (claude-code--heartbeat-get-claude-buffer)))
+    (unless buf
+      (user-error "请在 Claude buffer 或其 input buffer 中执行"))
+    (let ((entry (assq buf claude-code--heartbeat-timers)))
+      (if entry
+          ;; 已监控 → 停止
+          (progn
+            (claude-code--heartbeat-stop buf)
+            (force-mode-line-update t)
+            (message "[heartbeat] 已停用: %s" (buffer-name buf)))
+        ;; 未监控 → 启动
+        (let* ((seconds (* (read-number "间隔(分钟): " 2) 60))
+               (timer (run-with-timer seconds seconds
+                                      #'claude-code--heartbeat-tick buf)))
+          (with-current-buffer buf
+            (setq claude-code--heartbeat-last-size (point-max))
+            (setq claude-code--heartbeat-idle-count 0)
+            (setq claude-code--heartbeat-interval-secs seconds))
+          ;; 同步设置 input buffer
+          (let ((input-buf (get-buffer (claude-code--input-buffer-name buf))))
+            (when (buffer-live-p input-buf)
+              (with-current-buffer input-buf
+                (setq claude-code--heartbeat-interval-secs seconds))))
+          (push (cons buf timer) claude-code--heartbeat-timers)
+          ;; 确保 modeline 标识存在
+          (claude-code--heartbeat-ensure-modeline buf)
+          (let ((input-buf2 (get-buffer (claude-code--input-buffer-name buf))))
+            (claude-code--heartbeat-ensure-modeline input-buf2))
+          (force-mode-line-update t)
+          (message "[heartbeat] 已启用: %s (每%d分钟)"
+                   (buffer-name buf) (/ seconds 60)))))))
+
+;; modeline 标识：在 toggle 时直接注入到对应 buffer 的 mode-line-format 最前面
+(defun claude-code--heartbeat-ensure-modeline (buf)
+  "确保 BUF 的 modeline 最前面有 heartbeat 标识。"
+  (when (buffer-live-p buf)
+    (with-current-buffer buf
+      (let ((indicator '(:eval (claude-code--heartbeat-modeline))))
+        (unless (member indicator mode-line-format)
+          (setq mode-line-format (cons indicator mode-line-format)))))))
+
+;; buffer 关闭时自动清理 heartbeat timer
+(add-hook 'claude-code-start-hook
+          (lambda ()
+            (add-hook 'kill-buffer-hook
+                      (lambda ()
+                        (claude-code--heartbeat-stop (current-buffer)))
+                      nil t)))
+
+(with-eval-after-load 'claude-code
+  (define-key claude-code-command-map (kbd "h") #'claude-code-toggle-heartbeat))
+
+(require 'claude-code-logger)
 (require 'init-claude-group)
 
 (provide 'init-claude)

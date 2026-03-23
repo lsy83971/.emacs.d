@@ -1,4 +1,11 @@
 ;;; init-claude-group.el --- 从 org 文件批量创建 Claude 角色实例  -*- lexical-binding: t; -*-
+
+(require 'claude-code-logger)
+
+(declare-function claude-code--start "claude-code")
+(declare-function claude-code--find-all-claude-buffers "claude-code")
+(declare-function claude-code--get-character-id "claude-code")
+(declare-function claude-code--buffer-name "claude-code")
 ;;
 ;; 用法：M-x claude-group-start-from-org  或  C-c c g
 ;;
@@ -315,24 +322,31 @@ Emacs timer 会在 `read-from-minibuffer' 期间触发，此时调用栈已经
 
 ;;;###autoload
 (defun claude-group-start-from-org (file)
-  "从 org FILE 读取角色定义，批量创建 Claude 实例。
-
-org 格式：每个 * 一级标题为角色名，标题下方内容通过
---append-system-prompt 作为系统提示词传给 Claude CLI。
-
-可选 :PROPERTIES: 块支持：
-  :MCP_CONFIG:     MCP 配置文件路径
-  :MODEL:          模型名称
-  :ALLOWED_TOOLS:  工具白名单"
+  "从 org FILE 启动角色组。交互式询问新建主题或恢复已有主题。"
   (interactive
    (list (read-file-name "角色定义文件: " nil nil t)))
   (let* ((org-file (expand-file-name file))
          (dir (file-name-directory org-file))
-         (roles (claude-group--parse-org org-file)))
+         (existing-topics (claude-code-logger--list-topics dir))
+         (choice (if existing-topics
+                     (completing-read "选择操作: "
+                                      (cons "[新建主题]" existing-topics)
+                                      nil t)
+                   (progn (message "无已有主题，新建中...")
+                          "[新建主题]"))))
+    (if (string= choice "[新建主题]")
+        (claude-group--start-new-topic org-file dir)
+      (claude-group--resume-topic org-file dir choice))))
+
+(defun claude-group--start-new-topic (file dir)
+  "新建主题并启动所有角色。FILE 为 org 文件路径，DIR 为项目目录。"
+  (let* ((topic-name (read-string "主题名: "))
+         (roles (claude-group--parse-org (expand-file-name file)))
+         (sessions '()))
     (if (null roles)
-        (message "[claude-group] 未在 %s 中找到任何角色定义" org-file)
-      (message "[claude-group] 开始创建 %d 个角色实例：%s"
-               (length roles)
+        (message "[claude-group] 未在 %s 中找到任何角色定义" file)
+      (message "[claude-group] 主题 \"%s\"：创建 %d 个角色实例：%s"
+               topic-name (length roles)
                (mapconcat (lambda (r) (plist-get r :name)) roles ", "))
       (let ((i 0))
         (dolist (role roles)
@@ -340,14 +354,85 @@ org 格式：每个 * 一级标题为角色名，标题下方内容通过
                  (prompt    (plist-get role :prompt))
                  (props     (plist-get role :props))
                  (switches  (claude-group--build-switches role-name prompt props))
+                 (session-id (claude-code-logger--uuid))
+                 (full-switches (append switches
+                                        (list "--session-id" session-id
+                                              "--name" role-name)))
                  (start-at  (* i claude-group-instance-start-interval))
                  (is-first  (= i 0)))
+            (push (cons role-name session-id) sessions)
             (run-with-timer
              start-at nil
              (lambda ()
                (claude-group--safe-start-instance
-                dir role-name switches is-first))))
-          (setq i (1+ i)))))))
+                dir role-name full-switches is-first))))
+          (setq i (1+ i))))
+      ;; 保存主题映射（session ID 在启动前已全部生成）
+      (setq claude-code-logger--current-topic topic-name)
+      (claude-code-logger--save-topic dir topic-name file (nreverse sessions)))))
+
+(defun claude-group--resume-topic (file dir topic-name)
+  "恢复已有主题 TOPIC-NAME 的所有角色。以 org FILE 定义为准。"
+  (let* ((topic (claude-code-logger--read-topic dir topic-name))
+         (session-map (cdr (assoc 'sessions topic)))  ; alist: ((role . sid) ...)
+         (roles (claude-group--parse-org (expand-file-name file)))
+         (new-roles '())
+         (updated-sessions (mapcar (lambda (pair) (cons (symbol-name (car pair)) (cdr pair)))
+                                   session-map)))
+    (if (null roles)
+        (message "[claude-group] 未在 %s 中找到任何角色定义" file)
+      (message "[claude-group] 恢复主题 \"%s\"：%d 个角色"
+               topic-name (length roles))
+      (let ((i 0))
+        (dolist (role roles)
+          (let* ((role-name (plist-get role :name))
+                 (session-id (cdr (assoc role-name updated-sessions)))
+                 (prompt    (plist-get role :prompt))
+                 (props     (plist-get role :props))
+                 (switches  (claude-group--build-switches role-name prompt props))
+                 ;; 检查 session 文件是否真正存在
+                 ;; Claude CLI 用 git repo 根目录作为 project slug
+                 (session-file-exists
+                  (and session-id
+                       (let* ((git-root (string-trim
+                                         (shell-command-to-string
+                                          (format "cd %s && git rev-parse --show-toplevel 2>/dev/null"
+                                                  (shell-quote-argument dir)))))
+                              (project-slug (claude-code-logger--project-slug git-root))
+                              (session-path (expand-file-name
+                                             (concat session-id ".jsonl")
+                                             (expand-file-name project-slug "~/.claude/projects/"))))
+                         (file-exists-p session-path))))
+                 (full-switches
+                  (if (and session-id session-file-exists)
+                      ;; 已有角色且 session 文件存在：恢复
+                      (append switches (list "--resume" session-id
+                                              "--name" role-name))
+                    ;; 新角色或 session 文件不存在：用原 session-id 新建
+                    (let ((sid (or session-id (claude-code-logger--uuid))))
+                      (unless session-id
+                        (push role-name new-roles)
+                        (push (cons role-name sid) updated-sessions))
+                      (when (and session-id (not session-file-exists))
+                        (message "[claude-group] 角色 %s 的 session 文件不存在，将新建会话"
+                                 role-name))
+                      (append switches (list "--session-id" sid
+                                              "--name" role-name)))))
+                 (start-at (* i claude-group-instance-start-interval))
+                 (is-first (= i 0)))
+            (run-with-timer
+             start-at nil
+             (lambda ()
+               (claude-group--safe-start-instance
+                dir role-name full-switches is-first)))
+            (setq i (1+ i)))))
+      ;; 提示新角色
+      (when new-roles
+        (message "[claude-group] 主题 \"%s\" 新增角色：%s（新建会话）"
+                 topic-name (string-join (nreverse new-roles) ", ")))
+      ;; 更新主题文件
+      (setq claude-code-logger--current-topic topic-name)
+      (claude-code-logger--save-topic dir topic-name file updated-sessions))))
 
 ;;; ============================================================
 ;;; 绑定快捷键

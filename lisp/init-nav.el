@@ -1,11 +1,95 @@
+;;; ============================================================
+;;; avy：跳转 + Claude 实例 copy 模式管理
+;;; ============================================================
+
+(defun my/avy--enter-copy-mode-all ()
+  "让所有可见窗口中的 Claude 实例进入 copy 模式，返回已处理的窗口列表。"
+  (let (entered)
+    (dolist (win (window-list))
+      (with-selected-window win
+        (when (and (fboundp 'claude-code--buffer-p)
+                   (claude-code--buffer-p (current-buffer))
+                   (not (bound-and-true-p vterm-copy-mode)))
+          (let ((win-start (window-start))
+                (win-point (window-point)))
+            (claude-code--term-read-only-mode claude-code-terminal-backend)
+            (set-window-start win win-start t)
+            (goto-char (max win-point win-start)))
+          (push win entered))))
+    entered))
+
+(defun my/avy--exit-copy-mode-others (entered-wins)
+  "跳转后，非当前窗口的 Claude 实例退出 copy 模式。"
+  (let ((cur-win (selected-window)))
+    (dolist (win entered-wins)
+      (unless (eq win cur-win)
+        (with-current-buffer (window-buffer win)
+          (when (bound-and-true-p vterm-copy-mode)
+            (vterm-copy-mode -1)
+            (setq-local cursor-type nil)))))))
+
+(defun my/avy-goto-char-timer ()
+  "avy 跳转，自动管理 Claude 实例的 copy 模式。"
+  (interactive)
+  (let ((entered-wins (my/avy--enter-copy-mode-all)))
+    (avy-goto-char-timer)
+    (my/avy--exit-copy-mode-others entered-wins)))
+
+(defun my/avy-save-line ()
+  "用 avy 选择一行，复制到 kill-ring（不粘贴、不删除、光标和窗口不动）。
+vterm buffer 中自动过滤控制字符。"
+  (interactive)
+  (let ((orig-win (selected-window))
+        (orig-point (point)))
+    (avy-goto-line)
+    (let* ((beg (line-beginning-position))
+           (end (line-beginning-position 2))
+           (raw (buffer-substring beg end))
+           (cleaned (if (and (fboundp 'vterm--filter-buffer-substring)
+                             (derived-mode-p 'vterm-mode))
+                        (vterm--filter-buffer-substring raw)
+                      raw)))
+      (kill-new cleaned))
+    (select-window orig-win)
+    (goto-char orig-point)
+    (message "已复制到 kill-ring")))
+
+(defun my/avy-save-region ()
+  "用 avy 选两个点，区域内容复制到 kill-ring（不删除、光标和窗口不动）。
+vterm buffer 中自动过滤控制字符。"
+  (interactive)
+  (let ((orig-win (selected-window))
+        (orig-point (point)))
+    (avy-goto-char-timer)
+    (let ((p1 (point)))
+      (avy-goto-char-timer)
+      (let* ((p2 (point))
+             (beg (min p1 p2))
+             (end (max p1 p2))
+             (raw (buffer-substring beg end))
+             (cleaned (if (and (fboundp 'vterm--filter-buffer-substring)
+                               (derived-mode-p 'vterm-mode))
+                          (vterm--filter-buffer-substring raw)
+                        raw)))
+        (kill-new cleaned)))
+    (select-window orig-win)
+    (goto-char orig-point)
+    (message "已复制区域到 kill-ring")))
+
 (use-package avy
-  :bind (("C-2" . avy-goto-char-timer)
+  :bind (("C-2" . my/avy-goto-char-timer)
+         ("C-;" . my/avy-goto-char-timer)
          ("M-g l" . avy-goto-line)
          ("M-g w" . avy-goto-word-1)
-         ("C-c y" . avy-copy-line)
+         ("C-c y" . my/avy-save-line)
          ("C-c m" . avy-move-line)
-         ("C-c k" . avy-kill-whole-line)))
+         ("C-c k" . avy-kill-whole-line)
+         ("C-c K" . avy-kill-region)
+         ("C-c Y" . my/avy-save-region)))
 
+;;; ============================================================
+;;; multiple-cursors
+;;; ============================================================
 
 (use-package multiple-cursors
   :bind
@@ -14,6 +98,10 @@
    ("C-c C-<" . mc/mark-all-like-this)
    )
   )
+
+;;; ============================================================
+;;; 复制路径/角色名
+;;; ============================================================
 
 (defun lsy:copy-file-name()
   "put current file name in the killing ring"
@@ -39,8 +127,11 @@
 (global-set-key (kbd "<f5>") #'lsy:copy-character-id)
 
 (setq x-select-enable-clipboard t)
-(setq select-active-regions nil) ;; 禁用 “选中区域自动复制到剪贴板” 
+(setq select-active-regions nil) ;; 禁用 "选中区域自动复制到剪贴板"
 
+;;; ============================================================
+;;; 剪切/复制/粘贴/删除
+;;; ============================================================
 
 (defun lsy-kill ()
   (interactive)
@@ -61,7 +152,7 @@
   (if (region-active-p)
       (progn
 	(delete-region (region-beginning) (region-end))
-	(call-interactively #'yank)	
+	(call-interactively #'yank)
        )
       (call-interactively #'yank) ;; then
       ))
@@ -90,13 +181,13 @@
    ((and (region-active-p) (not (minibufferp)))
     (delete-region (region-beginning) (region-end))
     (deactivate-mark))
-   
+
    ;; 在minibuffer中：使用ivy的backspace函数（如果可用）
    ((minibufferp)
     (if (and (boundp 'ivy-mode) ivy-mode (fboundp 'ivy-backward-delete-char))
         (call-interactively 'ivy-backward-delete-char)
       (backward-delete-char-untabify 1)))
-   
+
    ;; 其他情况：普通backspace
    (t
     (backward-delete-char-untabify 1))))  ; 无选中时执行普通 Backspace
