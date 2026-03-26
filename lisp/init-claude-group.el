@@ -49,16 +49,18 @@
           (cond
            ;; 新的一级标题
            ((string-match "^\\* \\(.+\\)$" line)
-            (when current-name
-              (push (list :name current-name
-                          :prompt (string-trim
-                                   (mapconcat #'identity (nreverse current-lines) "\n"))
-                          :props (nreverse current-props))
-                    roles))
-            (setq current-name (string-trim (match-string 1 line))
-                  current-props nil
-                  current-lines nil
-                  in-properties nil))
+            ;; 先保存 match-string 结果——后续 string-trim 会破坏 match data
+            (let ((heading (match-string 1 line)))
+              (when current-name
+                (push (list :name current-name
+                            :prompt (string-trim
+                                     (mapconcat #'identity (nreverse current-lines) "\n"))
+                            :props (nreverse current-props))
+                      roles))
+              (setq current-name (string-trim heading)
+                    current-props nil
+                    current-lines nil
+                    in-properties nil)))
            ;; :PROPERTIES: 块开始
            ((and current-name (string-match-p "^\\s-*:PROPERTIES:\\s-*$" line))
             (setq in-properties t))
@@ -68,9 +70,11 @@
            ;; :PROPERTIES: 内的属性行
            ((and in-properties
                  (string-match "^\\s-*:\\([^:]+\\):\\s-*\\(.*\\)$" line))
-            (push (cons (upcase (string-trim (match-string 1 line)))
-                        (string-trim (match-string 2 line)))
-                  current-props))
+            (let ((prop-key (match-string 1 line))
+                  (prop-val (match-string 2 line)))
+              (push (cons (upcase (string-trim prop-key))
+                          (string-trim prop-val))
+                    current-props)))
            ;; 普通内容行
            (current-name
             (unless in-properties
@@ -200,11 +204,9 @@ PROPS 是从 org :PROPERTIES: 解析的 alist。
 (defvar claude-group--retry-interval 0.5
   "Minibuffer 活跃时重试的间隔秒数。")
 
-(defun claude-group--safe-start-instance (dir role-name switches is-first)
+(defun claude-group--safe-start-instance (dir role-name switches is-first &optional topic)
   "安全启动实例：如果 minibuffer 活跃则延迟重试，避免栈溢出。
-Emacs timer 会在 `read-from-minibuffer' 期间触发，此时调用栈已经
-很深（ivy/helm 等补全框架额外压入 ~16 帧），加上 vterm-mode 初始化
-本身接近 max-lisp-eval-depth，容易触发 1601 溢出。"
+TOPIC 为所属主题名，会设为 buffer-local 变量供 k8s MCP 查询。"
   (if (active-minibuffer-window)
       ;; minibuffer 活跃，延迟重试
       (progn
@@ -212,7 +214,7 @@ Emacs timer 会在 `read-from-minibuffer' 期间触发，此时调用栈已经
         (run-with-timer claude-group--retry-interval nil
                         (lambda ()
                           (claude-group--safe-start-instance
-                           dir role-name switches is-first))))
+                           dir role-name switches is-first topic))))
     ;; minibuffer 不活跃，正常启动
     (let ((existing (claude-group--find-existing role-name)))
       (if existing
@@ -220,7 +222,7 @@ Emacs timer 会在 `read-from-minibuffer' 期间触发，此时调用栈已经
                    role-name (buffer-name existing))
         (condition-case err
             (let ((buf (claude-group--start-instance
-                        dir role-name switches (not is-first))))
+                        dir role-name switches (not is-first) topic)))
               (if (buffer-live-p buf)
                   (message "[claude-group] 已启动角色：%s" role-name)
                 (message "[claude-group] 角色 %s 启动失败：buffer 不存在" role-name)))
@@ -246,8 +248,9 @@ Emacs timer 会在 `read-from-minibuffer' 期间触发，此时调用栈已经
 (defvar claude-group--pending-suppress nil
   "临时标志，非 nil 时 start-hook 会在 buffer 上设置 no-display 标记。")
 
-(defun claude-group--start-instance (dir role-name extra-switches &optional suppress-display)
+(defun claude-group--start-instance (dir role-name extra-switches &optional suppress-display topic)
   "在 DIR 下启动名为 ROLE-NAME 的 Claude 实例，传递 EXTRA-SWITCHES。
+TOPIC 为所属主题名，设为 buffer-local 供 k8s MCP 查询。
 
 返回对应 buffer。当 SUPPRESS-DISPLAY 非 nil 时，
 让 vterm 正常初始化（需要窗口测量宽度），完成后将窗口切回原 buffer，
@@ -293,7 +296,12 @@ Emacs timer 会在 `read-from-minibuffer' 期间触发，此时调用栈已经
        nil "/tmp/claude-debug.log"))
     ;; suppress 模式下 pop-to-buffer 走原始路径（临时分窗），
     ;; delete-window 正常关掉，不需要手动切回
-    (get-buffer (claude-code--buffer-name role-name))))
+    (let ((buf (get-buffer (claude-code--buffer-name role-name))))
+      ;; 设置 buffer-local topic，供 k8s MCP server 查询
+      (when (and buf (buffer-live-p buf) topic)
+        (with-current-buffer buf
+          (setq-local claude-code--k8s-topic topic)))
+      buf)))
 
 ;;; ============================================================
 ;;; 主入口：批量创建
@@ -365,7 +373,7 @@ Emacs timer 会在 `read-from-minibuffer' 期间触发，此时调用栈已经
              start-at nil
              (lambda ()
                (claude-group--safe-start-instance
-                dir role-name full-switches is-first))))
+                dir role-name full-switches is-first topic-name))))
           (setq i (1+ i))))
       ;; 保存主题映射（session ID 在启动前已全部生成）
       (setq claude-code-logger--current-topic topic-name)
@@ -424,7 +432,7 @@ Emacs timer 会在 `read-from-minibuffer' 期间触发，此时调用栈已经
              start-at nil
              (lambda ()
                (claude-group--safe-start-instance
-                dir role-name full-switches is-first)))
+                dir role-name full-switches is-first topic-name)))
             (setq i (1+ i)))))
       ;; 提示新角色
       (when new-roles

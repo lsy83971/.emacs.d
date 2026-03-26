@@ -417,6 +417,15 @@ C-RET 發送，C-up/C-down 瀏覽歷史，RET 換行（支援多行）。"
   (define-key claude-code-command-map (kbd "L") #'claude-code-manager))
 
 ;;;; ============================================================
+;;;; k8s topic（buffer-local，供 MCP server 查询）
+;;;; ============================================================
+
+(defvar-local claude-code--k8s-topic nil
+  "当前 Claude buffer 所属的 k8s topic（buffer-local）。
+由 `claude-group--start-instance' 在 buffer 创建时设置，
+k8s MCP server 通过 emacsclient 查询此值。")
+
+;;;; ============================================================
 ;;;; Claude 实例间通信（Inter-Instance Communication）
 ;;;; ============================================================
 ;;
@@ -477,13 +486,16 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
         (when (bound-and-true-p vterm-copy-mode)
           (vterm-copy-mode -1)
           (setq-local cursor-type nil))
-        (vterm-send-string message t)
-        (let ((b buf))
+        ;; 不用 bracketed paste 模式，直接发送 + return
+        ;; bracketed paste 在 timer 上下文中会导致后续 return 不可靠
+        ;; 延迟发送 return，给 vterm 时间处理完字符串
+        (let ((target-buf buf))
+          (vterm-send-string message nil)
           (run-with-timer 0.1 nil
-                          (lambda ()
-                            (when (buffer-live-p b)
-                              (with-current-buffer b
-                                (vterm-send-return)))))))
+            (lambda ()
+              (when (buffer-live-p target-buf)
+                (with-current-buffer target-buf
+                  (vterm-send-return)))))))
       (format "OK: 已发送至 %s" (buffer-name buf))))))
 
 ;;;; ============================================================
@@ -556,6 +568,9 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
 (defvar-local claude-code--heartbeat-idle-count 0
   "连续未变化的 tick 次数。需连续 2 次无变化才判定空闲。")
 
+(defvar-local claude-code--heartbeat-pending nil
+  "非 nil 表示已发送提醒但尚未被消费（buffer 无变化），阻止重复发送。")
+
 (defvar-local claude-code--heartbeat-interval-secs nil
   "当前 buffer 的 heartbeat 间隔（秒），用于 modeline 显示。")
 
@@ -572,10 +587,14 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
                  (changed (/= cur-size last-size)))
             (setq claude-code--heartbeat-last-size cur-size)
             (if changed
-                (setq claude-code--heartbeat-idle-count 0)
+                (progn
+                  (setq claude-code--heartbeat-idle-count 0)
+                  ;; buffer 有变化，说明之前的提醒已被消费（或 Claude 自行恢复工作）
+                  (setq claude-code--heartbeat-pending nil))
               (setq claude-code--heartbeat-idle-count
                     (1+ claude-code--heartbeat-idle-count))
-              (when (>= claude-code--heartbeat-idle-count 2)
+              (when (and (>= claude-code--heartbeat-idle-count 2)
+                         (not claude-code--heartbeat-pending))
                 (ignore-errors
                   (append-to-file
                    (format "[%s] >>> 触发提醒(idle=%d): %s\n"
@@ -588,6 +607,7 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
                       (claude-code-ipc-send
                        (buffer-name buf)
                        "[系统提醒] 请继续推进工作。")
+                      (setq claude-code--heartbeat-pending t)
                       (message "[heartbeat] 已提醒: %s" (buffer-name buf)))
                   (error
                    (ignore-errors
@@ -624,7 +644,7 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
 (defun claude-code--heartbeat-modeline ()
   "返回 heartbeat modeline 标识字符串。"
   (if claude-code--heartbeat-interval-secs
-      (propertize (format "♥%dm " (/ claude-code--heartbeat-interval-secs 60))
+      (propertize (format "♥%ds " claude-code--heartbeat-interval-secs)
                   'face '(:foreground "#e74c3c"))
     ""))
 
@@ -654,7 +674,7 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
             (force-mode-line-update t)
             (message "[heartbeat] 已停用: %s" (buffer-name buf)))
         ;; 未监控 → 启动
-        (let* ((seconds (* (read-number "间隔(分钟): " 2) 60))
+        (let* ((seconds (read-number "间隔(秒): " 120))
                (timer (run-with-timer seconds seconds
                                       #'claude-code--heartbeat-tick buf)))
           (with-current-buffer buf
@@ -672,8 +692,8 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
           (let ((input-buf2 (get-buffer (claude-code--input-buffer-name buf))))
             (claude-code--heartbeat-ensure-modeline input-buf2))
           (force-mode-line-update t)
-          (message "[heartbeat] 已启用: %s (每%d分钟)"
-                   (buffer-name buf) (/ seconds 60)))))))
+          (message "[heartbeat] 已启用: %s (每%ds)"
+                   (buffer-name buf) seconds))))))
 
 ;; modeline 标识：在 toggle 时直接注入到对应 buffer 的 mode-line-format 最前面
 (defun claude-code--heartbeat-ensure-modeline (buf)
