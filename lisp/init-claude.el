@@ -706,45 +706,10 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
 (with-eval-after-load 'claude-code
   (define-key claude-code-command-map (kbd "h") #'claude-code-toggle-heartbeat))
 
-;;;; ============================================================
-;;;; 刷新 session（删除 topic 文件以生成新 session-id）
-;;;; ============================================================
-
-(defun claude-code-refresh-session ()
-  "刷新当前 Claude 实例的 session。
-只删除当前角色的 session-id，保留其他角色的 session。"
-  (interactive)
-  (let* ((buf (current-buffer)))
-    (if (not (claude-code--buffer-p buf))
-        (message "当前 buffer 不是 Claude 实例")
-      (let* ((topic-name (buffer-local-value 'claude-code--k8s-topic buf))
-             (character-id (claude-code--get-character-id buf)))
-        (if (or (not topic-name) (not character-id))
-            (message "无法读取 topic 或角色信息")
-          (let* ((project-dir (buffer-local-value 'default-directory buf))
-                 (project-slug (replace-regexp-in-string
-                                "/" "-"
-                                (directory-file-name (expand-file-name project-dir))))
-                 (topic-file (expand-file-name
-                              (concat topic-name ".json")
-                              (expand-file-name project-slug "~/.claude/topics/"))))
-            (if (file-exists-p topic-file)
-                (if (y-or-n-p (format "删除 topic '%s' 中 '%s' 的 session 吗？" topic-name character-id))
-                    (with-temp-buffer
-                      (insert-file-contents topic-file)
-                      (let ((data (json-read)))
-                        (when (assoc 'sessions data)
-                          (setf (alist-get 'sessions data)
-                                (assq-delete-all (intern character-id) (alist-get 'sessions data))))
-                        (erase-buffer)
-                        (insert (json-encode data))
-                        (write-file topic-file)
-                        (message "已删除 %s 的 session，下次 resume 会生成新 session-id" character-id))))
-                  (message "已取消"))
-              (message "未找到 topic 文件: %s" topic-file)))))))))
-
+(require 'claude-refresh-session)
 (with-eval-after-load 'claude-code
   (define-key claude-code-command-map (kbd "R") #'claude-code-refresh-session))
+
 
 (require 'claude-code-logger)
 (require 'init-claude-group)
