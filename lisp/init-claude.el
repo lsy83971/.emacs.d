@@ -706,6 +706,36 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
 (with-eval-after-load 'claude-code
   (define-key claude-code-command-map (kbd "h") #'claude-code-toggle-heartbeat))
 
+;;;; ============================================================
+;;;; 刷新 session（删除 topic 文件以生成新 session-id）
+;;;; ============================================================
+
+(defun claude-code-refresh-session ()
+  "刷新当前 Claude 实例的 session。
+删除对应的 topic 文件，下次 resume 会生成新 session-id。"
+  (interactive)
+  (let* ((buf (current-buffer))
+         (buf-name (buffer-name buf)))
+    (if (not (claude-code--buffer-p buf))
+        (message "当前 buffer 不是 Claude 实例")
+      (if (y-or-n-p (format "删除 %s 的 session 文件吗？下次 resume 会创建新 session。" buf-name))
+          (let* ((topic-name (or (buffer-local-value 'claude-code--topic buf) "default"))
+                 (project-dir (buffer-local-value 'default-directory buf))
+                 (topic-file (expand-file-name
+                              (concat topic-name ".json")
+                              (expand-file-name
+                               (replace-regexp-in-string "/" "-" (directory-file-name project-dir))
+                               "~/.claude/topics/"))))
+            (if (file-exists-p topic-file)
+                (progn
+                  (delete-file topic-file)
+                  (message "已删除 session 文件: %s" topic-file))
+              (message "未找到 session 文件: %s" topic-file)))
+        (message "已取消")))))
+
+(with-eval-after-load 'claude-code
+  (define-key claude-code-command-map (kbd "R") #'claude-code-refresh-session))
+
 (require 'claude-code-logger)
 (require 'init-claude-group)
 
