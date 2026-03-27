@@ -487,17 +487,25 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
         (when (bound-and-true-p vterm-copy-mode)
           (vterm-copy-mode -1)
           (setq-local cursor-type nil))
-        ;; 改用 process-send-string 直接发送，避免 vterm-send-string 的 accept-process-output 阻塞。
-        ;; vterm-send-string 会在函数末尾调用 accept-process-output，
-        ;; 但 Claude CLI 处于等待用户输入状态，不会立即返回输出，导致函数永远阻塞。
-        (let ((proc vterm--process))
-          (when (processp proc)
-            (process-send-string proc message)
-            ;; 延迟 0.2s 后发送回车
-            (run-with-timer 0.2 nil
-              (lambda ()
-                (when (processp proc)
-                  (process-send-string proc "\C-m"))))))
+        ;; 用 process-send-string 直接发送，避免 vterm-send-string 的 accept-process-output 阻塞。
+        ;; 回车不能和消息合并发送——Claude CLI 需要先处理完消息字节才能识别 \C-m 为提交触发器。
+        ;; 用递归 timer 每 20ms 轮询 point-max，检测到 CLI echo 输出后（buffer 有变化）再发回车，
+        ;; 避免固定延迟，超时 2s 强制提交。
+        (let* ((proc vterm--process)
+               (old-max (point-max))
+               (deadline (time-add (current-time) 2.0))
+               (check-fn nil))
+          (setq check-fn
+                (lambda ()
+                  (if (not (buffer-live-p buf))
+                      nil
+                    (with-current-buffer buf
+                      (if (or (> (point-max) old-max)
+                              (time-less-p deadline (current-time)))
+                          (process-send-string proc "\C-m")
+                        (run-with-timer 0.02 nil check-fn))))))
+          (process-send-string proc message)
+          (run-with-timer 0.02 nil check-fn))
         (format "OK: 已发送至 %s" (buffer-name buf)))))))
 
 
