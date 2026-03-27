@@ -4,7 +4,7 @@
   "删除当前 Claude 实例在 topic 文件中的 session-id，下次 resume 会生成新的。"
   (interactive)
   (let ((buf (current-buffer)))
-    (unless (and (boundp 'claude-code--buffer-p) (claude-code--buffer-p buf))
+    (unless (claude-code--buffer-p buf)
       (user-error "当前 buffer 不是 Claude 实例"))
     (let ((topic (buffer-local-value 'claude-code--k8s-topic buf))
           (char-id (and (fboundp 'claude-code--get-character-id)
