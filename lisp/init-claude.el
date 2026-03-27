@@ -722,11 +722,12 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
         (if (or (not topic-name) (not character-id))
             (message "无法读取 topic 或角色信息")
           (let* ((project-dir (buffer-local-value 'default-directory buf))
+                 (project-slug (replace-regexp-in-string
+                                "/" "-"
+                                (directory-file-name (expand-file-name project-dir))))
                  (topic-file (expand-file-name
                               (concat topic-name ".json")
-                              (expand-file-name
-                               (replace-regexp-in-string "/" "-" (directory-file-name project-dir))
-                               "~/.claude/topics/"))))
+                              (expand-file-name project-slug "~/.claude/topics/"))))
             (if (file-exists-p topic-file)
                 (if (y-or-n-p (format "删除 topic '%s' 中 '%s' 的 session 吗？" topic-name character-id))
                     (with-temp-buffer
