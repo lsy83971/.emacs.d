@@ -714,20 +714,19 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
   "刷新当前 Claude 实例的 session。
 只删除当前角色的 session-id，保留其他角色的 session。"
   (interactive)
-  (let* ((buf (current-buffer))
-         (buf-name (buffer-name buf)))
+  (let* ((buf (current-buffer)))
     (if (not (claude-code--buffer-p buf))
         (message "当前 buffer 不是 Claude 实例")
-      (let* ((topic-name (read-string "输入 topic 名: "))
-             (project-dir (buffer-local-value 'default-directory buf))
-             (character-id (read-string "输入要刷新的角色名: ")))
-        (if (or (string-empty-p topic-name) (string-empty-p character-id))
-            (message "已取消")
-          (let ((topic-file (expand-file-name
-                             (concat topic-name ".json")
-                             (expand-file-name
-                              (replace-regexp-in-string "/" "-" (directory-file-name project-dir))
-                              "~/.claude/topics/"))))
+      (let* ((topic-name (buffer-local-value 'claude-code--k8s-topic buf))
+             (character-id (claude-code--get-character-id buf)))
+        (if (or (not topic-name) (not character-id))
+            (message "无法读取 topic 或角色信息")
+          (let* ((project-dir (buffer-local-value 'default-directory buf))
+                 (topic-file (expand-file-name
+                              (concat topic-name ".json")
+                              (expand-file-name
+                               (replace-regexp-in-string "/" "-" (directory-file-name project-dir))
+                               "~/.claude/topics/"))))
             (if (file-exists-p topic-file)
                 (if (y-or-n-p (format "删除 topic '%s' 中 '%s' 的 session 吗？" topic-name character-id))
                     (with-temp-buffer
@@ -739,7 +738,7 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
                         (erase-buffer)
                         (insert (json-encode data))
                         (write-file topic-file)
-                        (message "已删除 %s 的 session" character-id))))
+                        (message "已删除 %s 的 session，下次 resume 会生成新 session-id" character-id))))
                   (message "已取消"))
               (message "未找到 topic 文件: %s" topic-file)))))))))
 
