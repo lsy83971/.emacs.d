@@ -34,7 +34,8 @@
   ;; 让 MCP server 知道该连哪个 daemon
   (add-hook 'claude-code-process-environment-functions
             (lambda (_buffer-name _dir)
-              (list (format "EMACS_SOCKET_NAME=%s" (claude-code--ensure-server)))))
+              (list (format "EMACS_SOCKET_NAME=%s" (claude-code--ensure-server))
+                    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50")))
 
   ;; Claude 窗口佔據當前窗口（不創建額外窗口）
   (setq claude-code-display-window-fn
