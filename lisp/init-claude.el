@@ -718,20 +718,22 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
          (buf-name (buffer-name buf)))
     (if (not (claude-code--buffer-p buf))
         (message "当前 buffer 不是 Claude 实例")
-      (if (y-or-n-p (format "删除 %s 的 session 文件吗？下次 resume 会创建新 session。" buf-name))
-          (let* ((topic-name (or (buffer-local-value 'claude-code--topic buf) "default"))
-                 (project-dir (buffer-local-value 'default-directory buf))
-                 (topic-file (expand-file-name
-                              (concat topic-name ".json")
-                              (expand-file-name
-                               (replace-regexp-in-string "/" "-" (directory-file-name project-dir))
-                               "~/.claude/topics/"))))
-            (if (file-exists-p topic-file)
-                (progn
-                  (delete-file topic-file)
-                  (message "已删除 session 文件: %s" topic-file))
-              (message "未找到 session 文件: %s" topic-file)))
-        (message "已取消")))))
+      (let* ((topic-name (read-string "输入 topic 名（留空则取消）: "))
+             (project-dir (buffer-local-value 'default-directory buf)))
+        (if (string-empty-p topic-name)
+            (message "已取消")
+          (if (y-or-n-p (format "删除 topic '%s' 的 session 文件吗？下次 resume 会创建新 session。" topic-name))
+              (let ((topic-file (expand-file-name
+                                 (concat topic-name ".json")
+                                 (expand-file-name
+                                  (replace-regexp-in-string "/" "-" (directory-file-name project-dir))
+                                  "~/.claude/topics/"))))
+                (if (file-exists-p topic-file)
+                    (progn
+                      (delete-file topic-file)
+                      (message "已删除 session 文件: %s" topic-file))
+                  (message "未找到 session 文件: %s" topic-file)))
+            (message "已取消"))))))))
 
 (with-eval-after-load 'claude-code
   (define-key claude-code-command-map (kbd "R") #'claude-code-refresh-session))
