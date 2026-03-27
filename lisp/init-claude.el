@@ -1,12 +1,23 @@
 ;;; -*- lexical-binding: t; -*-
-;; 1. 添加 MELPA（vterm 需要）
 (use-package inheritenv
   :ensure t)
-;;(use-package eat :ensure t)
-(use-package vterm :ensure t)
+(use-package vterm
+  :ensure t
+  :config
+  ;; 终端里显示行号没意义，且 vterm--get-margin-width 估算不准
+  ;; 导致 PTY 宽度和 libvterm 渲染宽度不同步 → 乱码
+  (add-hook 'vterm-mode-hook (lambda () (display-line-numbers-mode -1))))
 (add-to-list 'load-path "~/.emacs.d/claude-code-stevemolitor")
 (require 'claude-code)
-(define-key global-map (kbd "C-c c") 'claude-code-command-map)
+
+(defun claude-code--ensure-server ()
+  "确保 Emacs server 已启动，返回当前 server-name。
+避免默认名 \"server\" 与其他 Emacs 实例冲突，改为 \"server-<pid>\"。"
+  (unless (bound-and-true-p server-process)
+    (when (string= server-name "server")
+      (setq server-name (format "server-%d" (emacs-pid))))
+    (server-start))
+  server-name)
 
 (use-package claude-code
   :ensure nil
@@ -23,9 +34,7 @@
   ;; 让 MCP server 知道该连哪个 daemon
   (add-hook 'claude-code-process-environment-functions
             (lambda (_buffer-name _dir)
-              (unless (bound-and-true-p server-process)
-                (server-start))
-              (list (format "EMACS_SOCKET_NAME=%s" server-name))))
+              (list (format "EMACS_SOCKET_NAME=%s" (claude-code--ensure-server)))))
 
   ;; Claude 窗口佔據當前窗口（不創建額外窗口）
   (setq claude-code-display-window-fn
@@ -46,25 +55,16 @@
   ;; 攔截 pop-to-buffer 對 Claude buffer 的調用，一律改用 switch-to-buffer（佔據當前窗口）
   ;; 同時設置 initializing 標記，防止 vterm 內部的 delete-window 關閉該窗口
   (define-advice pop-to-buffer (:around (orig-fn buffer &rest args) claude-code-same-window)
-    "所有 Claude buffer 一律在當前窗口顯示，不創建額外窗口。
-批量靜默創建（`claude-group--pending-suppress' 非 nil）時走原始
-`pop-to-buffer'，避免搶佔當前窗口。"
+    "所有 Claude buffer 一律在當前窗口顯示，不創建額外窗口。"
     (let* ((buf-name (if (bufferp buffer)
                          (buffer-name buffer)
                        (if (stringp buffer) buffer nil)))
            (is-claude (and buf-name (string-match-p "^\\*claude:" buf-name))))
       (if (not is-claude)
           (apply orig-fn buffer args)
-        (if (bound-and-true-p claude-group--pending-suppress)
-            ;; 靜默模式：走原始 pop-to-buffer，讓 vterm 量窗口寬度，
-            ;; 之後 delete-window 會關掉臨時窗口
-            (progn
-              (setq claude-code--initializing nil)
-              (apply orig-fn buffer args))
-          ;; 正常模式：佔據當前窗口
-          (setq claude-code--initializing t)
-          (run-with-timer 0.5 nil (lambda () (setq claude-code--initializing nil)))
-          (switch-to-buffer buffer)))))
+        (setq claude-code--initializing t)
+        (run-with-timer 0.5 nil (lambda () (setq claude-code--initializing nil)))
+        (switch-to-buffer buffer))))
 
   ;; 阻止 delete-window 刪除 Claude buffer 的窗口（僅在初始化階段）
 
@@ -80,6 +80,28 @@
         (funcall orig-fn window))))
 
   ;; 👇 spinner 字符修正（確保這個 hook 存在）
+
+  ;; ── 修复 PTY 与 libvterm 宽度不同步 ──
+  ;; vterm 内部用 window-body-width 设 PTY，再减 margin 设 libvterm，
+  ;; 二者不一致导致 Claude 按 PTY 宽度渲染的内容在 libvterm 处被截断换行 → 乱码。
+  ;; 修法：在 vterm 设完 libvterm 后，把 PTY 也同步成 libvterm 的宽度。
+  (defun claude-code--sync-pty-to-vterm (process windows)
+    "在 vterm 更新 libvterm 宽度后，同步 PTY 内核宽度到相同值。"
+    (when-let* ((buf (and (processp process)
+                          (process-live-p process)
+                          (process-buffer process)))
+                (_ (buffer-live-p buf))
+                (_ (claude-code--buffer-p buf))
+                (win (car windows)))
+      (with-current-buffer buf
+        (with-selected-window win
+          (let* ((mc (window-max-chars-per-line))
+                 (margin (vterm--get-margin-width))
+                 (correct-width (max (- mc margin) vterm-min-window-width))
+                 (h (window-body-height win)))
+            (set-process-window-size process h correct-width))))))
+  (advice-add 'vterm--window-adjust-process-window-size
+              :after #'claude-code--sync-pty-to-vterm)
   )
 
 (require 'project)
@@ -87,19 +109,6 @@
              (lambda (dir)
                (when (locate-dominating-file dir ".project")
                  (cons 'transient dir))))
-
-;; 修复：切换 vterm-copy-mode 时阻止 Claude CLI 收到 resize 信号
-;; 注释掉这个 advice，因为它会干扰 display-buffer-same-window 的行为
-;; (define-advice display-buffer (:around (orig-fn buffer &rest args) claude-code-preserve-window)
-;;   "当 Claude buffer 已经在某个窗口显示时，不重新 display，保持窗口大小不变。"
-;;   (if (and (claude-code--buffer-p buffer)
-;;            (get-buffer-window buffer))
-;;       ;; 已经可见，直接返回现有窗口，不做任何操作
-;;       (get-buffer-window buffer)
-;;     ;; 否则正常 display
-;;     (apply orig-fn buffer args)))
-
-;;(advice-add 'claude-code-toggle-read-only-mode :override #'claude-code-toggle-read-only-mode-fixed)
 
 ;;;; Copy/Paste 快捷鍵（vterm backend 專用）
 ;;
@@ -140,12 +149,16 @@
       (goto-char (max win-point win-start)))
     (message "Copy 模式：C-SPC 設標記，移動選取，再按 M-w 複製並退出")))
 
+(defun claude-code--exit-copy-mode ()
+  "若当前 buffer 处于 vterm-copy-mode，退出之。"
+  (when (bound-and-true-p vterm-copy-mode)
+    (vterm-copy-mode -1)
+    (setq-local cursor-type nil)))
+
 (defun claude-code-paste ()
   "C-y：將 kill-ring 頂端內容貼到 Claude vterm 的輸入區。"
   (interactive)
-  (when (bound-and-true-p vterm-copy-mode)
-    (vterm-copy-mode -1)
-    (setq-local cursor-type nil))
+  (claude-code--exit-copy-mode)
   (if kill-ring
       (vterm-send-string (substring-no-properties (current-kill 0)) t)
     (message "Kill ring 為空")))
@@ -239,9 +252,7 @@
       (if (not (buffer-live-p claude-buf))
           (user-error "找不到 Claude buffer，請先啟動 Claude")
         (with-current-buffer claude-buf
-          (when (bound-and-true-p vterm-copy-mode)
-            (vterm-copy-mode -1)
-            (setq-local cursor-type nil))
+          (claude-code--exit-copy-mode)
           (vterm-send-string content t)
           (vterm-send-return))))
     (erase-buffer)
@@ -311,67 +322,57 @@ C-RET 發送，C-up/C-down 瀏覽歷史，RET 換行（支援多行）。"
 
 (defun claude-code--input-buffer-name (claude-buf)
   "根据 CLAUDE-BUF 生成对应的 input buffer 名称。
-格式：*input:<角色名>*，无角色名时用 buffer 名。"
+格式：*claude-input:CLAUDE-BUF-NAME*。"
   (let ((cid (and claude-buf (claude-code--get-character-id claude-buf))))
     (format "*input:%s*" (or cid (if claude-buf (buffer-name claude-buf) "?")))))
+
+(defun claude-code--get-or-create-input-buf (claude-buf)
+  "为 CLAUDE-BUF 获取或创建 input buffer，确保 mode 和 target 已设置。"
+  (let ((input-buf (get-buffer-create (claude-code--input-buffer-name claude-buf))))
+    (with-current-buffer input-buf
+      (unless claude-code-input-mode
+        (claude-code-input-mode 1))
+      (setq-local claude-code-input--target
+                  (and claude-buf (buffer-name claude-buf))))
+    input-buf))
+
+(defun claude-code--display-input-below (claude-buf input-buf)
+  "在 CLAUDE-BUF 的窗口下方显示 INPUT-BUF。已可见则不重复显示。"
+  (unless (get-buffer-window input-buf t)
+    (let ((claude-win (get-buffer-window claude-buf t)))
+      (if claude-win
+          (with-selected-window claude-win
+            (display-buffer input-buf
+                            `(display-buffer-below-selected
+                              (window-height . ,claude-code-input-window-height)
+                              (preserve-size . (nil . t)))))
+        (display-buffer input-buf
+                        `(display-buffer-pop-up-window
+                          (window-height . ,claude-code-input-window-height)))))))
 
 (defun claude-code-open-input ()
   "開啟對應當前 Claude instance 的獨立輸入框。
 若視窗已存在則直接跳至該視窗。"
   (interactive)
-  (let* ((claude-buf  (claude-code--get-or-prompt-for-buffer))
-         (input-name  (claude-code--input-buffer-name claude-buf))
-         (input-buf   (get-buffer-create input-name))
-         (is-new      (not (buffer-local-value 'claude-code-input-mode input-buf))))
-    (with-current-buffer input-buf
-      (when is-new
-        (claude-code-input-mode 1))
-      ;; 更新目標（Claude buffer 可能重啟過）
-      (setq-local claude-code-input--target
-                  (and claude-buf (buffer-name claude-buf))))
+  (let* ((claude-buf (claude-code--get-or-prompt-for-buffer))
+         (input-buf  (claude-code--get-or-create-input-buf claude-buf)))
     (if-let ((win (get-buffer-window input-buf)))
         (select-window win)
-      (let* ((claude-win (and claude-buf (get-buffer-window claude-buf t)))
-             (win (if claude-win
-                      (with-selected-window claude-win
-                        (display-buffer input-buf
-                                        `((display-buffer-reuse-window display-buffer-below-selected)
-                                          (window-height . ,claude-code-input-window-height))))
-                    (display-buffer input-buf
-                                    `((display-buffer-pop-up-window)
-                                      (window-height . ,claude-code-input-window-height))))))
-        (when win (select-window win))))))
+      (when-let ((win (claude-code--display-input-below claude-buf input-buf)))
+        (select-window win)))))
 
 (defun claude-code--auto-open-input ()
   "Claude 啟動時自動在其下方開啟輸入框。
-
-若 Claude buffer 有 buffer-local 變量 `claude-group--no-display' 為非 nil，
-只創建 input buffer 但不彈出窗口。"
-  (let* ((claude-buf (current-buffer))
-         (suppress (and (local-variable-p 'claude-group--no-display claude-buf)
-                        (buffer-local-value 'claude-group--no-display claude-buf))))
+若 buffer 有 `claude-group--no-display' 標記，只創建 buffer 不彈窗。"
+  (let ((claude-buf (current-buffer)))
     (run-with-timer
      0.3 nil
      (lambda ()
        (when (buffer-live-p claude-buf)
-         (let* ((input-name (claude-code--input-buffer-name claude-buf))
-                (input-buf  (get-buffer-create input-name)))
-           (with-current-buffer input-buf
-             (unless claude-code-input-mode
-               (claude-code-input-mode 1))
-             (setq-local claude-code-input--target (buffer-name claude-buf)))
-           ;; suppress 时只创建 buffer，不弹窗
-           (unless (or suppress (get-buffer-window input-buf t))
-             (let ((claude-win (get-buffer-window claude-buf t)))
-               (if claude-win
-                   (with-selected-window claude-win
-                     (display-buffer input-buf
-                                     `(display-buffer-below-selected
-                                       (window-height . ,claude-code-input-window-height)
-                                       (preserve-size . (nil . t)))))
-                 (display-buffer input-buf
-                                 `(display-buffer-pop-up-window
-                                   (window-height . ,claude-code-input-window-height))))))))))))
+         (let ((input-buf (claude-code--get-or-create-input-buf claude-buf))
+               (suppress (ignore-errors (buffer-local-value 'claude-group--no-display claude-buf))))
+           (unless suppress
+             (claude-code--display-input-below claude-buf input-buf))))))))
 (add-hook 'claude-code-start-hook #'claude-code--auto-open-input)
 
 (defun claude-code--auto-kill-input ()
@@ -486,17 +487,19 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
         (when (bound-and-true-p vterm-copy-mode)
           (vterm-copy-mode -1)
           (setq-local cursor-type nil))
-        ;; 不用 bracketed paste 模式，直接发送 + return
-        ;; bracketed paste 在 timer 上下文中会导致后续 return 不可靠
-        ;; 延迟发送 return，给 vterm 时间处理完字符串
-        (let ((target-buf buf))
-          (vterm-send-string message nil)
-          (run-with-timer 0.1 nil
-            (lambda ()
-              (when (buffer-live-p target-buf)
-                (with-current-buffer target-buf
-                  (vterm-send-return)))))))
-      (format "OK: 已发送至 %s" (buffer-name buf))))))
+        ;; 改用 process-send-string 直接发送，避免 vterm-send-string 的 accept-process-output 阻塞。
+        ;; vterm-send-string 会在函数末尾调用 accept-process-output，
+        ;; 但 Claude CLI 处于等待用户输入状态，不会立即返回输出，导致函数永远阻塞。
+        (let ((proc vterm--process))
+          (when (processp proc)
+            (process-send-string proc message)
+            ;; 延迟 0.2s 后发送回车
+            (run-with-timer 0.2 nil
+              (lambda ()
+                (when (processp proc)
+                  (process-send-string proc "\C-m"))))))
+        (format "OK: 已发送至 %s" (buffer-name buf)))))))
+
 
 ;;;; ============================================================
 ;;;; Character ID 系统（复用 instance name）
@@ -578,52 +581,31 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
   "Heartbeat tick：检查 BUF 是否空闲，空闲则发送提醒。
 用 buffer size (point-max) 判断变化——vterm 有内容输出时 point-max 必然变化，
 而光标闪烁、spinner 不影响 point-max。连续 2 次 tick 无变化才判定空闲。"
-  (condition-case err
-      (if (not (buffer-live-p buf))
-          (claude-code--heartbeat-stop buf)
-        (with-current-buffer buf
-          (let* ((cur-size (point-max))
-                 (last-size (or claude-code--heartbeat-last-size 0))
-                 (changed (/= cur-size last-size)))
-            (setq claude-code--heartbeat-last-size cur-size)
-            (if changed
+  (if (not (buffer-live-p buf))
+      (claude-code--heartbeat-stop buf)
+    (with-current-buffer buf
+      (let* ((cur-size (point-max))
+             (last-size (or claude-code--heartbeat-last-size 0))
+             (changed (/= cur-size last-size)))
+        (setq claude-code--heartbeat-last-size cur-size)
+        (if changed
+            (progn
+              (setq claude-code--heartbeat-idle-count 0)
+              (setq claude-code--heartbeat-pending nil))
+          (setq claude-code--heartbeat-idle-count
+                (1+ claude-code--heartbeat-idle-count))
+          (when (and (>= claude-code--heartbeat-idle-count 2)
+                     (not claude-code--heartbeat-pending))
+            (condition-case nil
                 (progn
-                  (setq claude-code--heartbeat-idle-count 0)
-                  ;; buffer 有变化，说明之前的提醒已被消费（或 Claude 自行恢复工作）
-                  (setq claude-code--heartbeat-pending nil))
-              (setq claude-code--heartbeat-idle-count
-                    (1+ claude-code--heartbeat-idle-count))
-              (when (and (>= claude-code--heartbeat-idle-count 2)
-                         (not claude-code--heartbeat-pending))
-                (ignore-errors
-                  (append-to-file
-                   (format "[%s] >>> 触发提醒(idle=%d): %s\n"
-                           (format-time-string "%H:%M:%S")
-                           claude-code--heartbeat-idle-count
-                           (buffer-name buf))
-                   nil "/tmp/heartbeat-debug.log"))
-                (condition-case send-err
-                    (progn
-                      (claude-code-ipc-send
-                       (buffer-name buf)
-                       "[系统提醒] 请继续推进工作。")
-                      (setq claude-code--heartbeat-pending t)
-                      (message "[heartbeat] 已提醒: %s" (buffer-name buf)))
-                  (error
-                   (ignore-errors
-                     (append-to-file
-                      (format "[%s] !!! 提醒失败: %s\n"
-                              (format-time-string "%H:%M:%S")
-                              (error-message-string send-err))
-                      nil "/tmp/heartbeat-debug.log"))))
-                (setq claude-code--heartbeat-idle-count 0))))))
-    (error
-     (ignore-errors
-       (append-to-file
-        (format "[%s] !!! tick 异常: %s\n"
-                (format-time-string "%H:%M:%S")
-                (error-message-string err))
-        nil "/tmp/heartbeat-debug.log")))))
+                  (claude-code-ipc-send
+                   (buffer-name buf)
+                   "[系统提醒] 请继续推进工作。")
+                  (setq claude-code--heartbeat-pending t)
+                  (message "[heartbeat] 已提醒: %s" (buffer-name buf)))
+              (error
+               (message "[heartbeat] 提醒失败: %s" (buffer-name buf))))
+            (setq claude-code--heartbeat-idle-count 0)))))))
 
 (defun claude-code--heartbeat-stop (buf)
   "停止 BUF 的 heartbeat timer 并从 alist 中移除，清理 modeline。"
