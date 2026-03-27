@@ -24,9 +24,6 @@
 (defvar claude-code-logger--current-topic nil
   "当前活跃主题名。")
 
-(defvar claude-code-logger--ipc-log '()
-  "IPC 通信记录（内存缓存）。")
-
 ;;; ============================================================
 ;;; 工具函数
 ;;; ============================================================
@@ -121,9 +118,6 @@ SESSIONS 为 ((role . session-id) ...) 形式的 alist。"
   "Advice around `claude-code-ipc-send'，实时追加写日志文件。"
   (let* ((time (format-time-string "%Y-%m-%d %H:%M:%S"))
          (result (funcall orig-fn target message)))
-    (push (list :time time :to target :message message :result result)
-          claude-code-logger--ipc-log)
-    ;; 崩溃安全：实时追加到文件
     (let ((log-file (expand-file-name "ipc.log" claude-code-logger-topic-dir)))
       (unless (file-directory-p claude-code-logger-topic-dir)
         (make-directory claude-code-logger-topic-dir t))

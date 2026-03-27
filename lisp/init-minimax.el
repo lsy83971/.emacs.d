@@ -456,7 +456,7 @@ ON-TOOL-CALLS(calls-vector) — 收到 tool_calls 时回调（可选）。"
       (progn
         (mm--log "STREAM-REQ: curl 未找到")
         (funcall on-error "curl 未安装，请先安装 curl"))
-  (let* ((api-key  (mm--get-api-key))
+    (let* ((api-key  (mm--get-api-key))
          (payload  (mm--build-payload messages tools))
          (proc-buf (generate-new-buffer " *mm-curl*"))
          (partial  (cons "" nil))

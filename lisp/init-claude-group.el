@@ -4,7 +4,7 @@
 
 (declare-function claude-code--start "claude-code")
 (declare-function claude-code--find-all-claude-buffers "claude-code")
-(declare-function claude-code--get-character-id "claude-code")
+(declare-function claude-code--get-character-id "init-claude")
 (declare-function claude-code--buffer-name "claude-code")
 ;;
 ;; 用法：M-x claude-group-start-from-org  或  C-c c g
@@ -111,11 +111,12 @@
 ;;; 动态 MCP 配置：让每个 Claude 实例连接到正确的 Emacs server
 ;;; ============================================================
 
+(declare-function claude-code--ensure-server "init-claude")
+
 (defun claude-group--emacs-server-name ()
-  "返回当前 Emacs 的 server socket 名称。"
-  (if (bound-and-true-p server-name)
-      server-name
-    "server"))
+  "返回当前 Emacs 的 server socket 名称。
+通过 `claude-code--ensure-server' 确保 server 已启动，避免时序问题。"
+  (claude-code--ensure-server))
 
 (defun claude-group--mcp-config-for-server (socket-name)
   "为 SOCKET-NAME 生成 MCP 配置 JSON 文件路径，不存在则创建。
@@ -204,31 +205,40 @@ PROPS 是从 org :PROPERTIES: 解析的 alist。
 (defvar claude-group--retry-interval 0.5
   "Minibuffer 活跃时重试的间隔秒数。")
 
-(defun claude-group--safe-start-instance (dir role-name switches is-first &optional topic)
+(defcustom claude-group--max-retry-depth 5
+  "最大重试深度。超过此深度时放弃等待 minibuffer 并强制启动。"
+  :type 'integer
+  :group 'claude-code)
+
+(defun claude-group--safe-start-instance (dir role-name switches is-first &optional topic retry-depth)
   "安全启动实例：如果 minibuffer 活跃则延迟重试，避免栈溢出。
-TOPIC 为所属主题名，会设为 buffer-local 变量供 k8s MCP 查询。"
-  (if (active-minibuffer-window)
-      ;; minibuffer 活跃，延迟重试
-      (progn
-        (message "[claude-group] 角色 %s 等待 minibuffer 关闭..." role-name)
-        (run-with-timer claude-group--retry-interval nil
-                        (lambda ()
-                          (claude-group--safe-start-instance
-                           dir role-name switches is-first topic))))
-    ;; minibuffer 不活跃，正常启动
-    (let ((existing (claude-group--find-existing role-name)))
-      (if existing
-          (message "[claude-group] 角色 %s 已存在（buffer: %s），跳过"
-                   role-name (buffer-name existing))
-        (condition-case err
-            (let ((buf (claude-group--start-instance
-                        dir role-name switches (not is-first) topic)))
-              (if (buffer-live-p buf)
-                  (message "[claude-group] 已启动角色：%s" role-name)
-                (message "[claude-group] 角色 %s 启动失败：buffer 不存在" role-name)))
-          (error
-           (message "[claude-group] 角色 %s 启动出错：%s"
-                    role-name (error-message-string err))))))))
+TOPIC 为所属主题名，会设为 buffer-local 变量供 k8s MCP 查询。
+RETRY-DEPTH 内部用来计数重试次数，防止无限递归。"
+  (let ((depth (or retry-depth 0)))
+    (if (and (< depth claude-group--max-retry-depth)
+             (active-minibuffer-window))
+        ;; minibuffer 活跃且未超深度限制，延迟重试
+        (progn
+          (message "[claude-group] 角色 %s 等待 minibuffer 关闭... (重试 %d/%d)"
+                   role-name (1+ depth) claude-group--max-retry-depth)
+          (run-with-timer claude-group--retry-interval nil
+                          (lambda ()
+                            (claude-group--safe-start-instance
+                             dir role-name switches is-first topic (1+ depth)))))
+      ;; minibuffer 不活跃或达到重试上限，正常启动
+      (let ((existing (claude-group--find-existing role-name)))
+        (if existing
+            (message "[claude-group] 角色 %s 已存在（buffer: %s），跳过"
+                     role-name (buffer-name existing))
+          (condition-case err
+              (let ((buf (claude-group--start-instance
+                          dir role-name switches (not is-first) topic)))
+                (if (buffer-live-p buf)
+                    (message "[claude-group] 已启动角色：%s" role-name)
+                  (message "[claude-group] 角色 %s 启动失败：buffer 不存在" role-name)))
+            (error
+             (message "[claude-group] 角色 %s 启动出错：%s"
+                      role-name (error-message-string err)))))))))
 
 (defun claude-group--find-existing (role-name)
   "查找 character-id 等于 ROLE-NAME 的已有 Claude buffer，不存在返回 nil。"
@@ -236,71 +246,25 @@ TOPIC 为所属主题名，会设为 buffer-local 变量供 k8s MCP 查询。"
                 (string= (claude-code--get-character-id buf) role-name))
               (claude-code--find-all-claude-buffers)))
 
-(defun claude-group--mark-no-display ()
-  "在 claude-code-start-hook 中标记当前 buffer 不弹窗。
-仅当 `claude-group--pending-suppress' 为非 nil 时生效。"
-  (when (bound-and-true-p claude-group--pending-suppress)
-    (setq-local claude-group--no-display t)))
-
-;; 确保在 auto-open-input 之前运行（prepend 到 hook）
-(add-hook 'claude-code-start-hook #'claude-group--mark-no-display -90)
-
-(defvar claude-group--pending-suppress nil
-  "临时标志，非 nil 时 start-hook 会在 buffer 上设置 no-display 标记。")
-
 (defun claude-group--start-instance (dir role-name extra-switches &optional suppress-display topic)
   "在 DIR 下启动名为 ROLE-NAME 的 Claude 实例，传递 EXTRA-SWITCHES。
 TOPIC 为所属主题名，设为 buffer-local 供 k8s MCP 查询。
 
 返回对应 buffer。当 SUPPRESS-DISPLAY 非 nil 时，
-让 vterm 正常初始化（需要窗口测量宽度），完成后将窗口切回原 buffer，
-并通过 start-hook 在 buffer 上设置标记以抑制 input 弹窗。"
+通过 #'ignore 抑制窗口弹出，启动后在 buffer 上设置 no-display 标记
+以抑制 input 弹窗。"
   (let ((claude-group--preset-instance-name role-name)
         (default-directory dir)
-        (claude-group--pending-suppress suppress-display)
-        ;; suppress 时仍然走正常 display（vterm 需要窗口），事后切回
         (claude-code-display-window-fn
-         (if suppress-display #'ignore claude-code-display-window-fn))
-)
-    ;; DEBUG: 记录调用前状态 + 完整 backtrace
-    (let ((frames 0)
-          (bt-lines nil))
-      (mapbacktrace (lambda (evald func args _flags)
-                      (setq frames (1+ frames))
-                      (push (format "  #%d %s %s %S"
-                                    frames
-                                    (if evald ">" " ")
-                                    func
-                                    (if (> (length (format "%S" args)) 100)
-                                        "(args truncated)"
-                                      args))
-                            bt-lines)))
-      (append-to-file
-       (format "[%s] PRE claude-code--start: frames=%d suppress=%s dir=%s\nBacktrace:\n%s\n\n"
-               role-name frames suppress-display dir
-               (mapconcat #'identity (nreverse bt-lines) "\n"))
-       nil "/tmp/claude-debug.log"))
-    (condition-case err
-        (claude-code--start nil extra-switches nil nil)
-      (error
-       (append-to-file
-        (format "[%s] ERROR in claude-code--start: %s\n" role-name (error-message-string err))
-        nil "/tmp/claude-debug.log")
-       (signal (car err) (cdr err))))
-    ;; DEBUG: 记录调用后状态
+         (if suppress-display #'ignore claude-code-display-window-fn)))
+    (claude-code--start nil extra-switches nil nil)
     (let ((buf (get-buffer (claude-code--buffer-name role-name))))
-      (append-to-file
-       (format "[%s] POST claude-code--start: buf=%s live=%s process=%s\n"
-               role-name buf (and buf (buffer-live-p buf))
-               (and buf (get-buffer-process buf) t))
-       nil "/tmp/claude-debug.log"))
-    ;; suppress 模式下 pop-to-buffer 走原始路径（临时分窗），
-    ;; delete-window 正常关掉，不需要手动切回
-    (let ((buf (get-buffer (claude-code--buffer-name role-name))))
-      ;; 设置 buffer-local topic，供 k8s MCP server 查询
-      (when (and buf (buffer-live-p buf) topic)
+      (when (and buf (buffer-live-p buf))
         (with-current-buffer buf
-          (setq-local claude-code--k8s-topic topic)))
+          (when topic
+            (setq-local claude-code--k8s-topic topic))
+          (when suppress-display
+            (setq-local claude-group--no-display t))))
       buf)))
 
 ;;; ============================================================
@@ -365,7 +329,7 @@ TOPIC 为所属主题名，设为 buffer-local 供 k8s MCP 查询。
                  (session-id (claude-code-logger--uuid))
                  (full-switches (append switches
                                         (list "--session-id" session-id
-                                              "--name" role-name)))
+                                              "--name" (shell-quote-argument role-name))))
                  (start-at  (* i claude-group-instance-start-interval))
                  (is-first  (= i 0)))
             (push (cons role-name session-id) sessions)
@@ -415,7 +379,7 @@ TOPIC 为所属主题名，设为 buffer-local 供 k8s MCP 查询。
                   (if (and session-id session-file-exists)
                       ;; 已有角色且 session 文件存在：恢复
                       (append switches (list "--resume" session-id
-                                              "--name" role-name))
+                                              "--name" (shell-quote-argument role-name)))
                     ;; 新角色或 session 文件不存在：用原 session-id 新建
                     (let ((sid (or session-id (claude-code-logger--uuid))))
                       (unless session-id
@@ -425,7 +389,7 @@ TOPIC 为所属主题名，设为 buffer-local 供 k8s MCP 查询。
                         (message "[claude-group] 角色 %s 的 session 文件不存在，将新建会话"
                                  role-name))
                       (append switches (list "--session-id" sid
-                                              "--name" role-name)))))
+                                              "--name" (shell-quote-argument role-name))))))
                  (start-at (* i claude-group-instance-start-interval))
                  (is-first (= i 0)))
             (run-with-timer

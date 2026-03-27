@@ -2,6 +2,14 @@
 ;;; avy：跳转 + Claude 实例 copy 模式管理
 ;;; ============================================================
 
+(defmacro my/avy--with-english-im (&rest body)
+  "执行 BODY 前暂时关闭输入法（rime），完成后恢复。"
+  (declare (indent 0))
+  `(let ((im--was-active current-input-method))
+     (when im--was-active (deactivate-input-method))
+     (unwind-protect (progn ,@body)
+       (when im--was-active (activate-input-method im--was-active)))))
+
 (defun my/avy--enter-copy-mode-all ()
   "让所有可见窗口中的 Claude 实例进入 copy 模式，返回已处理的窗口列表。"
   (let (entered)
@@ -31,60 +39,97 @@
 (defun my/avy-goto-char-timer ()
   "avy 跳转，自动管理 Claude 实例的 copy 模式。"
   (interactive)
-  (let ((entered-wins (my/avy--enter-copy-mode-all)))
-    (avy-goto-char-timer)
-    (my/avy--exit-copy-mode-others entered-wins)))
+  (my/avy--with-english-im
+    (let ((entered-wins (my/avy--enter-copy-mode-all)))
+      (avy-goto-char-timer)
+      (my/avy--exit-copy-mode-others entered-wins))))
 
 (defun my/avy-save-line ()
   "用 avy 选择一行，复制到 kill-ring（不粘贴、不删除、光标和窗口不动）。
 vterm buffer 中自动过滤控制字符。"
   (interactive)
-  (let ((orig-win (selected-window))
-        (orig-point (point)))
-    (avy-goto-line)
-    (let* ((beg (line-beginning-position))
-           (end (line-beginning-position 2))
-           (raw (buffer-substring beg end))
-           (cleaned (if (and (fboundp 'vterm--filter-buffer-substring)
-                             (derived-mode-p 'vterm-mode))
-                        (vterm--filter-buffer-substring raw)
-                      raw)))
-      (kill-new cleaned))
-    (select-window orig-win)
-    (goto-char orig-point)
-    (message "已复制到 kill-ring")))
-
-(defun my/avy-save-region ()
-  "用 avy 选两个点，区域内容复制到 kill-ring（不删除、光标和窗口不动）。
-vterm buffer 中自动过滤控制字符。"
-  (interactive)
-  (let ((orig-win (selected-window))
-        (orig-point (point)))
-    (avy-goto-char-timer)
-    (let ((p1 (point)))
-      (avy-goto-char-timer)
-      (let* ((p2 (point))
-             (beg (min p1 p2))
-             (end (max p1 p2))
+  (my/avy--with-english-im
+  (save-selected-window
+    (let ((orig-win (selected-window))
+          (orig-point (point))
+          (orig-start (window-start)))
+      (avy-goto-line)
+      (let* ((beg (line-beginning-position))
+             (end (line-beginning-position 2))
              (raw (buffer-substring beg end))
              (cleaned (if (and (fboundp 'vterm--filter-buffer-substring)
                                (derived-mode-p 'vterm-mode))
                           (vterm--filter-buffer-substring raw)
                         raw)))
-        (kill-new cleaned)))
-    (select-window orig-win)
-    (goto-char orig-point)
-    (message "已复制区域到 kill-ring")))
+        (kill-new cleaned))
+      ;; 确保回到原窗口
+      (select-window orig-win)
+      (goto-char orig-point)
+      (set-window-start orig-win orig-start t)
+      (message "已复制到 kill-ring")))))
+
+(defun my/avy-save-region ()
+  "用 avy 选两个点，区域内容复制到 kill-ring（不删除、光标和窗口不动）。
+vterm buffer 中自动过滤控制字符。"
+  (interactive)
+  (my/avy--with-english-im
+  (save-selected-window
+    (let ((orig-win (selected-window))
+          (orig-point (point))
+          (orig-start (window-start)))
+      (avy-goto-char-timer)
+      (let ((p1 (point)))
+        (avy-goto-char-timer)
+        (let* ((p2 (point))
+               (beg (min p1 p2))
+               (end (max p1 p2))
+               (raw (buffer-substring beg end))
+               (cleaned (if (and (fboundp 'vterm--filter-buffer-substring)
+                                 (derived-mode-p 'vterm-mode))
+                            (vterm--filter-buffer-substring raw)
+                          raw)))
+          (kill-new cleaned)))
+      ;; 确保回到原窗口和位置
+      (select-window orig-win)
+      (goto-char orig-point)
+      (set-window-start orig-win orig-start t)
+      (message "已复制区域到 kill-ring")))))
+
+;; 为直接绑定的 avy 命令也加上输入法切换
+(defun my/avy-goto-line ()
+  "avy-goto-line，自动切英文输入法。"
+  (interactive)
+  (my/avy--with-english-im (avy-goto-line)))
+
+(defun my/avy-goto-word-1 ()
+  "avy-goto-word-1，自动切英文输入法。"
+  (interactive)
+  (my/avy--with-english-im (call-interactively #'avy-goto-word-1)))
+
+(defun my/avy-move-line ()
+  "avy-move-line，自动切英文输入法。"
+  (interactive)
+  (my/avy--with-english-im (call-interactively #'avy-move-line)))
+
+(defun my/avy-kill-whole-line ()
+  "avy-kill-whole-line，自动切英文输入法。"
+  (interactive)
+  (my/avy--with-english-im (call-interactively #'avy-kill-whole-line)))
+
+(defun my/avy-kill-region ()
+  "avy-kill-region，自动切英文输入法。"
+  (interactive)
+  (my/avy--with-english-im (call-interactively #'avy-kill-region)))
 
 (use-package avy
   :bind (("C-2" . my/avy-goto-char-timer)
          ("C-;" . my/avy-goto-char-timer)
-         ("M-g l" . avy-goto-line)
-         ("M-g w" . avy-goto-word-1)
+         ("M-g l" . my/avy-goto-line)
+         ("M-g w" . my/avy-goto-word-1)
          ("C-c y" . my/avy-save-line)
-         ("C-c m" . avy-move-line)
-         ("C-c k" . avy-kill-whole-line)
-         ("C-c K" . avy-kill-region)
+         ("C-c m" . my/avy-move-line)
+         ("C-c k" . my/avy-kill-whole-line)
+         ("C-c K" . my/avy-kill-region)
          ("C-c Y" . my/avy-save-region)))
 
 ;;; ============================================================
