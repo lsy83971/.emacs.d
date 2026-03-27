@@ -712,28 +712,36 @@ TARGET 可以是精确 buffer 名（如 \"*claude:~/.emacs.d*\"），
 
 (defun claude-code-refresh-session ()
   "刷新当前 Claude 实例的 session。
-删除对应的 topic 文件，下次 resume 会生成新 session-id。"
+只删除当前角色的 session-id，保留其他角色的 session。"
   (interactive)
   (let* ((buf (current-buffer))
          (buf-name (buffer-name buf)))
     (if (not (claude-code--buffer-p buf))
         (message "当前 buffer 不是 Claude 实例")
-      (let* ((topic-name (read-string "输入 topic 名（留空则取消）: "))
-             (project-dir (buffer-local-value 'default-directory buf)))
-        (if (string-empty-p topic-name)
+      (let* ((topic-name (read-string "输入 topic 名: "))
+             (project-dir (buffer-local-value 'default-directory buf))
+             (character-id (read-string "输入要刷新的角色名: ")))
+        (if (or (string-empty-p topic-name) (string-empty-p character-id))
             (message "已取消")
-          (if (y-or-n-p (format "删除 topic '%s' 的 session 文件吗？下次 resume 会创建新 session。" topic-name))
-              (let ((topic-file (expand-file-name
-                                 (concat topic-name ".json")
-                                 (expand-file-name
-                                  (replace-regexp-in-string "/" "-" (directory-file-name project-dir))
-                                  "~/.claude/topics/"))))
-                (if (file-exists-p topic-file)
-                    (progn
-                      (delete-file topic-file)
-                      (message "已删除 session 文件: %s" topic-file))
-                  (message "未找到 session 文件: %s" topic-file)))
-            (message "已取消"))))))))
+          (let ((topic-file (expand-file-name
+                             (concat topic-name ".json")
+                             (expand-file-name
+                              (replace-regexp-in-string "/" "-" (directory-file-name project-dir))
+                              "~/.claude/topics/"))))
+            (if (file-exists-p topic-file)
+                (if (y-or-n-p (format "删除 topic '%s' 中 '%s' 的 session 吗？" topic-name character-id))
+                    (with-temp-buffer
+                      (insert-file-contents topic-file)
+                      (let ((data (json-read)))
+                        (when (assoc 'sessions data)
+                          (setf (alist-get 'sessions data)
+                                (assq-delete-all (intern character-id) (alist-get 'sessions data))))
+                        (erase-buffer)
+                        (insert (json-encode data))
+                        (write-file topic-file)
+                        (message "已删除 %s 的 session" character-id))))
+                  (message "已取消"))
+              (message "未找到 topic 文件: %s" topic-file)))))))))
 
 (with-eval-after-load 'claude-code
   (define-key claude-code-command-map (kbd "R") #'claude-code-refresh-session))
