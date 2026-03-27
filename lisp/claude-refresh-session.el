@@ -12,7 +12,9 @@
       (unless (and topic char-id)
         (user-error "无法读取 topic 或角色信息"))
       (let* ((dir (buffer-local-value 'default-directory buf))
-             (slug (replace-regexp-in-string "/" "-" (directory-file-name (expand-file-name dir))))
+             ;; 找项目根（有 .project 文件的目录）
+             (project-root (or (locate-dominating-file dir ".project") dir))
+             (slug (replace-regexp-in-string "/" "-" (directory-file-name (expand-file-name project-root))))
              (file (expand-file-name (concat topic ".json") (expand-file-name slug "~/.claude/topics/"))))
         (unless (file-exists-p file)
           (user-error "未找到 topic 文件"))
