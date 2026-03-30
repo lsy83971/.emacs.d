@@ -48,9 +48,7 @@
 
 (use-package electric-spacing)
 (use-package elpy)
-(use-package rainbow-delimiters
-  :ensure t
-  :defer t)
+;; rainbow-delimiters 已在 init-ui.el 全局启用
 
 (use-package python-mode
   :ensure t
@@ -66,13 +64,10 @@
                                      company-capf
                                      company-dabbrev-code
                                      company-files))
-      (company-mode 1)
-      (rainbow-delimiters-mode))))
-  :config
-  (elpy-enable)
+      (company-mode 1))))
   :custom
-  ((python-shell-prompt-regexp "In \\[[0-9]+\\]: ")
-   (python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: "))
+  (python-shell-prompt-regexp "In \\[[0-9]+\\]: ")
+  (python-shell-prompt-output-regexp "Out\\[[0-9]+\\]: ")
   :bind
   (:map python-mode-map
 	("C-r" . lsy-python-eval-line)
@@ -81,6 +76,7 @@
 	("C-<down>" . python-nav-forward-defun)
 	("C-<tab>" . hs-toggle-hiding))
   :config
+  (elpy-enable)
   (setq read-process-output-max (* 1024 1024))
   (setq gc-cons-threshold (* 100 1024 1024))  ;; 100MB，不要 1GB
   (if (eq system-type 'windows-nt)
