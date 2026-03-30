@@ -10,17 +10,25 @@
   (my/swap-command-option))
 (setq inhibit-compacting-font-caches t)
 (defun my/set-frame-font-setting (&optional frame)
-   (setq-default line-height nil)
-   (set-face-attribute 'default nil :font "Sarasa Fixed SC" :height 120)
-   ;; 固定行高为字体高度，不随内容变化
-   (setq x-stretch-cursor t)
- )
+   (when (display-graphic-p (or frame (selected-frame)))
+     (let ((f (or frame (selected-frame))))
+       (with-selected-frame f
+         (setq-default line-height nil)
+         (set-face-attribute 'default nil :family "Sarasa Fixed SC" :height 105 :background "#1a1b26")
+         (dolist (charset '(han cjk-misc bopomofo kana hangul symbol))
+           (set-fontset-font t charset (font-spec :family "Sarasa Fixed SC") nil 'prepend))
+         (setq x-stretch-cursor t)))))
 (add-hook 'server-after-make-frame-hook 'my/set-frame-font-setting)
-(add-hook 'after-init-hook 'my/set-frame-font-setting)
 
 ;;(setq debug-on-error t)
 ;;(setq debug-on-error nil)
 (defvar kinsoku-limit nil)
+
+;;
+;;------------------------------------------------------------
+(setq make-backup-files nil)
+(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+(require 'init-package)
 
 ;; need install rime-dev fcitx...
 (unless (eq system-type 'darwin)
@@ -30,17 +38,24 @@
     :custom
     (default-input-method "rime")
     (rime-show-candidate 'popup)
-    :bind
-    ))
-
-;;(setq rime-show-candidate 'minibuffer)
-
-
-;;
-;;------------------------------------------------------------
-(setq make-backup-files nil)
-(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
-(require 'init-package)
+    :config
+    (setq rime-title "中")
+    ;; popup 在窗口底部空间不足时向上弹出
+    (defun my/rime-popup-auto-direction (orig-fn content)
+      (let* ((lines (if (string-blank-p content) 0
+                     (1+ (cl-count ?\n content))))
+             (remaining (- (window-body-height)
+                           (- (line-number-at-pos (point))
+                              (line-number-at-pos (window-start)))))
+             (rime-popup-properties
+              (if (< remaining (+ lines 2))
+                  (append (list :point (save-excursion
+                                         (forward-line (- (1+ lines)))
+                                         (point)))
+                          rime-popup-properties)
+                rime-popup-properties)))
+        (funcall orig-fn content)))
+    (advice-add 'rime--popup-display-content :around #'my/rime-popup-auto-direction)))
 (require 'init-company)
 (require 'init-ui)
 (require 'init-ivy)
@@ -81,22 +96,6 @@
 ;;  :config
 ;;  (load-theme 'zenburn t))
 
-(use-package all-the-icons
-  :ensure t
-  :if (display-graphic-p)
-  :config
-  ;; 确保字体已安装
-  (unless (find-font (font-spec :name "all-the-icons"))
-    (all-the-icons-install-fonts t))
-  
-  ;; 用于 treemacs
-  (use-package treemacs-all-the-icons
-    :ensure t
-    :after (treemacs all-the-icons)
-    :config
-    (treemacs-load-theme "all-the-icons")))
-
-(load-theme 'tango)
 (add-hook 'kill-emacs-hook
           (lambda ()
             ;; 1. 先关输入法
@@ -136,14 +135,14 @@
  '(package-selected-packages
    '(anzu avy bazel bind-key chatgpt-shell claude-code command-log-mode
 	  company-anaconda company-box company-web dash-functional
-	  dired-subtree dirvish doom-modeline electric-spacing elpy
-	  emmet-mode epc expand-region flycheck fullframe git-commit
-	  gnu-elpa-keyring-update google-this gptel helpful
-	  hungry-delete ivy-dired-history lsp-ui magit modus-themes
-	  multiple-cursors no-littering nyan-mode org-bullets
-	  ox-pandoc pkg-info projectile pyim python-environment
-	  python-mode rainbow-delimiters rime smartparens smex
-	  treemacs-all-the-icons undo-tree virtualenv
+	  dashboard dired-subtree dirvish doom-modeline
+	  electric-spacing elpy emmet-mode epc expand-region flycheck
+	  fullframe git-commit gnu-elpa-keyring-update google-this
+	  gptel helpful hungry-delete ivy-dired-history lsp-ui magit
+	  modus-themes multiple-cursors no-littering nyan-mode
+	  org-bullets ox-pandoc pkg-info projectile pyim
+	  python-environment python-mode rainbow-delimiters rime
+	  smartparens smex treemacs-all-the-icons undo-tree virtualenv
 	  virtualenvwrapper visual-fill-column vterm vue-mode w3m
 	  which-key xterm-color zenburn-theme zygospore))
  '(package-vc-selected-packages 'nil)
@@ -165,5 +164,6 @@
 ;; undo-tree: 集中存放历史文件，不污染项目目录
 (setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo-tree-history/")))
 
-
+;; 字体设置放在最末尾，确保不被 load-theme 等覆盖
+(my/set-frame-font-setting)
 

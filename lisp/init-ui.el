@@ -56,14 +56,75 @@
 
 ;; Better UI configuration
 
-(use-package nyan-mode)
-(nyan-mode t)
-;; (use-package command-log-mode)
+;; ── 主题 (modus-vivendi + tokyo night 背景) ──────
+(use-package modus-themes
+  :ensure t
+  :config
+  (setq modus-themes-bold-constructs t
+        modus-themes-italic-constructs t)
+  (setq modus-themes-common-palette-overrides
+        '((border-mode-line-active unspecified)
+          (border-mode-line-inactive unspecified)))
+  (load-theme 'modus-vivendi t)
+  (set-face-attribute 'default nil :background "#1a1b26")
+  ;; vterm 终端颜色适配深色背景
+  (with-eval-after-load 'vterm
+    (set-face-attribute 'vterm-color-black nil :foreground "#a9b1d6" :background "#414868")
+    (set-face-attribute 'vterm-color-bright-black nil :foreground "#a9b1d6" :background "#414868")
+    (set-face-attribute 'vterm-color-inverse-video nil :background "#1a1b26"))
+  ;; modeline 配色
+  (set-face-attribute 'mode-line nil :background "#4e6cc0" :foreground "#e0e6ff")
+  (set-face-attribute 'mode-line-active nil :background "#4e6cc0" :foreground "#e0e6ff")
+  (set-face-attribute 'mode-line-inactive nil :background "#333d5c" :foreground "#a9b1d6"))
 
-;;(use-package all-the-icons)
-;;(use-package doom-modeline
-;;  :init (doom-modeline-mode 1)
-;;  :custom ((doom-modeline-height 15)))
+;; ── Modeline ─────────────────────────────────────
+(use-package nerd-icons :ensure t)
+(use-package doom-modeline
+  :ensure t
+  :init (doom-modeline-mode 1)
+  :custom
+  (doom-modeline-height 25)
+  (doom-modeline-bar-width 4)
+  (doom-modeline-icon t)
+  (doom-modeline-major-mode-icon t)
+  (doom-modeline-major-mode-color-icon t)
+  (doom-modeline-buffer-file-name-style 'truncate-upto-project)
+  (doom-modeline-minor-modes nil)
+  (doom-modeline-enable-word-count nil)
+  (doom-modeline-buffer-encoding nil)
+  (doom-modeline-checker-simple-format t)
+  (doom-modeline-vcs-max-length 20)
+  (doom-modeline-env-version nil)
+  (doom-modeline-github nil)
+  (doom-modeline-mu4e nil)
+  (doom-modeline-irc nil)
+  (doom-modeline-persp-name nil))
+
+;; ── 括号彩虹（所有编程模式） ─────────────────────
+(use-package rainbow-delimiters
+  :ensure t
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+;; ── 变动区域闪烁提示 ────────────────────────────
+(use-package goggles
+  :ensure t
+  :hook ((prog-mode text-mode) . goggles-mode)
+  :config
+  (setq goggles-pulse t))
+
+;; ── TODO/FIXME/HACK 高亮 ────────────────────────
+(use-package hl-todo
+  :ensure t
+  :hook (prog-mode . hl-todo-mode))
+
+;; ── 光标跳转脉冲（内置） ────────────────────────
+(setq pulse-delay 0.04)
+(setq pulse-iterations 10)
+(dolist (hook '(imenu-after-jump-hook))
+  (add-hook hook #'pulse-line))
+(advice-add 'recenter-top-bottom :after
+            (lambda (&rest _) (pulse-momentary-highlight-one-line)))
+
 
 (use-package which-key
   :init (which-key-mode)
