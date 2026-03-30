@@ -216,7 +216,7 @@
 ;; 輸入框是普通 Emacs buffer，自動補全等功能均可正常使用。
 ;; Claude 啟動時自動在 Claude 視窗下方彈出輸入框。
 
-(defcustom claude-code-input-window-height 6
+(defcustom claude-code-input-window-height 10
   "輸入框視窗高度（行數）。"
   :type 'integer
   :group 'claude-code)
@@ -426,6 +426,11 @@ C-RET 發送，C-up/C-down 瀏覽歷史，RET 換行（支援多行）。"
   "当前 Claude buffer 所属的 k8s topic（buffer-local）。
 由 `claude-group--start-instance' 在 buffer 创建时设置，
 k8s MCP server 通过 emacsclient 查询此值。")
+
+(defvar-local claude-code--topic-slug nil
+  "当前 Claude buffer 对应的 topic 文件所在目录的 slug。
+由 `claude-group--start-instance' 设置，用于准确定位 topic JSON 文件。
+格式：目录路径中的 '/' 替换为 '-'，如 /mnt/lishiyu/quant1/RNN/plan → -mnt-lishiyu-quant1-RNN-plan")
 
 ;;;; ============================================================
 ;;;; Claude 实例间通信（Inter-Instance Communication）

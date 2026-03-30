@@ -262,7 +262,10 @@ TOPIC 为所属主题名，设为 buffer-local 供 k8s MCP 查询。
       (when (and buf (buffer-live-p buf))
         (with-current-buffer buf
           (when topic
-            (setq-local claude-code--k8s-topic topic))
+            (setq-local claude-code--k8s-topic topic)
+            ;; 计算并保存 slug（用于准确定位 topic JSON 文件）
+            (let ((slug (replace-regexp-in-string "/" "-" (directory-file-name (expand-file-name dir)))))
+              (setq-local claude-code--topic-slug slug)))
           (when suppress-display
             (setq-local claude-group--no-display t))))
       buf)))
