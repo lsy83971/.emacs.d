@@ -40,6 +40,7 @@
     (rime-show-candidate 'popup)
     :config
     (setq rime-title "中")
+    (register-input-method "rime" "euc-cn" 'rime-activate rime-title)
     ;; popup 在窗口底部空间不足时向上弹出
     (defun my/rime-popup-auto-direction (orig-fn content)
       (let* ((lines (if (string-blank-p content) 0
